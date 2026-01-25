@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlx-skills"
+version = "0.1.0"
+description = "One-liner installer for MLX skills."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+
+[project.urls]
+Repository = "https://github.com/awni/mlx-skills"
+
+[project.scripts]
+mlx-skills = "mlx_skills.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mlx_skills*"]
+
+[tool.setuptools.package-data]
+mlx_skills = ["skills/**"]
