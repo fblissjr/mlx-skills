@@ -1,9 +1,11 @@
 ---
 name: fast-mlx
 description: >
-  Optimize MLX code for performance and memory. Use when asked to speed up MLX
-  models or algorithms, reduce latency/throughput bottlenecks, tune lazy
-  evaluation, type promotion, fast ops, compilation, memory use, or profiling.
+  Optimize MLX code for performance and memory. Use when asked to speed up,
+  optimize, or profile MLX models or algorithms. Scan project imports for
+  "import mlx" or "from mlx" to determine applicability. Triggers on "optimize
+  mlx", "speed up", "reduce latency", "throughput", "lazy evaluation tuning",
+  "type promotion", "mx.compile", "mx.metal", "memory use", or "profiling".
   For general MLX concepts and patterns, load the mlx skill first.
 ---
 

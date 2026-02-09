@@ -1,12 +1,14 @@
 ---
 name: mlx
 description: >
-  Use when writing, debugging, reviewing, or analyzing MLX code. Triggers on
-  "MLX", "Apple silicon ML", "mx.array", "mx.compile", "mx.eval", "nn.Module",
-  "nn.Linear", "mlx.optimizers", "training loop", or any project using the mlx
-  framework. Covers core concepts, nn module system, layers, optimizers,
-  training patterns, and debugging. For mlx-lm specific patterns, load the
-  mlx-lm skill.
+  Use when writing, debugging, reviewing, optimizing, or analyzing MLX code.
+  Scan project imports for "import mlx", "from mlx", "mx.array", "mx.compile",
+  "mx.eval" to determine applicability. Also triggers on "MLX", "Apple silicon
+  ML", "nn.Module", "nn.Linear", "mlx.optimizers", "training loop", or any
+  project using the mlx framework. Covers core concepts, nn module system,
+  layers, optimizers, training patterns, and debugging. If the project also
+  uses mlx-lm, load the mlx-lm skill. For performance optimization, load the
+  fast-mlx skill.
 ---
 
 # MLX

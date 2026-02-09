@@ -3,44 +3,21 @@
 A collection of skills that teach AI coding assistants how MLX actually works --
 lazy evaluation, unified memory, idiomatic patterns, and performance tuning.
 
-## Skills
-
-### mlx
-
-Core MLX knowledge: concepts, nn module system, layers, optimizers, training
-patterns, anti-patterns, and debugging. Triggers on any MLX-related work
-(writing, debugging, reviewing, analyzing).
-
-**Reference files loaded on demand:**
-- `fundamentals.md` -- Lazy evaluation, unified memory, streams, compile, transformations, type system
-- `nn-and-training.md` -- nn.Module system, all layers, losses, optimizers, schedulers, training loop patterns
-- `anti-patterns.md` -- Common mistakes from NumPy/PyTorch habits
-- `debugging.md` -- Shape debugging, evaluation issues, memory profiling, common errors
-
-### mlx-lm
-
-Language model patterns for mlx-lm, Apple's official LLM library. Triggers on
-mlx-lm imports, model loading, generation, KV cache, LoRA, quantization.
-
-**Reference files loaded on demand:**
-- `patterns.md` -- Idiomatic mlx-lm patterns: nn.Module structure, attention, KV cache, generation, quantization, LoRA, RoPE, sharding
-- `architecture.md` -- mlx-lm directory structure, model loading flow, generation flow, model registration, fine-tuning flow, server integration
-
-### fast-mlx
-
-Performance optimization for MLX code. Triggers on explicit optimization requests.
-
-**Reference files:**
-- `fast-mlx-guide.md` -- Comprehensive performance guide (graph evaluation, type promotion, ops, compile, memory, profiling)
-- `llm-optimization.md` -- KV cache tuning, async generation, prefill chunking, batch generation, speculative decoding
-- `dit-optimization.md` -- Denoising step compilation, CFG batching, vision attention, memory management
-- `compute-optimization.md` -- Matrix ops, element-wise fusion, vmap, streaming, data pipelines
+Once installed, skills load automatically when you work with MLX code, or you
+can invoke them explicitly.
 
 ## Install
 
-### One-liner (uv)
+### From GitHub (recommended)
 
 ```
+uvx --from git+https://github.com/fblissjr/mlx-skills.git mlx-skills --claude --force
+```
+
+### From local clone
+
+```
+cd mlx-skills
 uv run mlx-skills --claude --force
 ```
 
@@ -49,7 +26,105 @@ Other targets: `--codex`, `--opencode`, or `--dest /path/to/skills`.
 ### Manual
 
 Copy the `mlx_skills/skills/mlx`, `mlx_skills/skills/mlx-lm`, and
-`mlx_skills/skills/fast-mlx` directories into your assistant's skills directory.
+`mlx_skills/skills/fast-mlx` directories into your assistant's skills directory
+(e.g., `~/.claude/skills/`).
+
+## Usage
+
+Skills load in two ways:
+
+1. **Automatically** -- Claude scans your code for MLX imports and triggers
+   the relevant skills based on what it finds.
+2. **Explicitly** -- invoke a skill by name with `/mlx`, `/mlx-lm`, or
+   `/fast-mlx`, or say "load the mlx skill" in your prompt.
+
+### Scenarios
+
+**"Review my MLX code for issues"**
+- Claude detects `import mlx` and loads the `mlx` skill
+- If it also finds `from mlx_lm import`, it loads `mlx-lm` too
+- Anti-patterns and debugging references inform the review
+
+**"Optimize my MLX inference server"**
+- Say `/fast-mlx` or "optimize my MLX code"
+- Claude loads `fast-mlx` for profiling, compilation, and memory guidance
+- If mlx-lm is involved, it loads `mlx-lm` for generation pipeline patterns
+- References: `llm-optimization.md`, `fast-mlx-guide.md`
+
+**"Write a training loop"**
+- Claude detects MLX usage and loads `mlx`
+- References: `nn-and-training.md` for optimizers, schedulers, training patterns
+- References: `fundamentals.md` for lazy evaluation and compile semantics
+
+**"Set up mlx-lm text generation"**
+- Say `/mlx-lm` or just work with mlx-lm code
+- References: `patterns.md` for generation pipeline, KV cache, sampling
+- References: `architecture.md` for model loading and server integration
+
+**"Fine-tune a model with LoRA"**
+- `/mlx-lm` for LoRA patterns and quantization
+- References: `architecture.md` for the fine-tuning flow
+
+**"Debug shape mismatches in my model"**
+- `/mlx` loads core skill
+- References: `debugging.md` for shape debugging, memory profiling, common errors
+- References: `anti-patterns.md` for PyTorch/NumPy habits that break in MLX
+
+**"Speed up my diffusion model"**
+- `/fast-mlx` for optimization
+- References: `dit-optimization.md` for denoising compilation, CFG batching,
+  vision attention
+
+### Tips
+
+- You can load multiple skills in one session. They complement each other.
+- Say "load the references for X" if Claude hasn't pulled in the detail you need.
+- Skills work in any project -- they activate based on imports, not project structure.
+
+## Skills
+
+### mlx
+
+Core MLX framework knowledge.
+
+**Triggers:** `import mlx`, `mx.array`, `mx.compile`, `mx.eval`, `nn.Module`,
+`nn.Linear`, `mlx.optimizers`, or any MLX-related work.
+
+**Invoke:** `/mlx`
+
+**Reference files (loaded on demand):**
+- `fundamentals.md` -- Lazy evaluation, unified memory, streams, compile, transformations, type system
+- `nn-and-training.md` -- nn.Module system, all layers, losses, optimizers, schedulers, training loop patterns
+- `anti-patterns.md` -- Common mistakes from NumPy/PyTorch habits
+- `debugging.md` -- Shape debugging, evaluation issues, memory profiling, common errors
+
+### mlx-lm
+
+Language model patterns for mlx-lm, Apple's official LLM library.
+
+**Triggers:** `import mlx_lm`, `from mlx_lm import`, `stream_generate`,
+`KVCache`, LoRA, quantization, GGUF, safetensors.
+
+**Invoke:** `/mlx-lm`
+
+**Reference files (loaded on demand):**
+- `patterns.md` -- nn.Module structure, attention, KV cache, generation, quantization, LoRA, RoPE, sharding
+- `architecture.md` -- Model loading flow, generation flow, model registration, fine-tuning flow, server integration
+
+### fast-mlx
+
+Performance optimization for MLX code.
+
+**Triggers:** "optimize mlx", "speed up", "reduce latency", "profiling",
+`mx.compile`, `mx.metal`, memory optimization.
+
+**Invoke:** `/fast-mlx`
+
+**Reference files (loaded on demand):**
+- `fast-mlx-guide.md` -- Graph evaluation, type promotion, ops, compile, memory, profiling
+- `llm-optimization.md` -- KV cache tuning, async generation, prefill chunking, batch generation, speculative decoding
+- `dit-optimization.md` -- Denoising step compilation, CFG batching, vision attention, memory management
+- `compute-optimization.md` -- Matrix ops, element-wise fusion, vmap, streaming, data pipelines
 
 ## Validation
 

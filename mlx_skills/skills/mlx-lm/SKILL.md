@@ -2,11 +2,12 @@
 name: mlx-lm
 description: >
   Use when working with mlx-lm, Apple's official language model library for MLX.
-  Triggers on "mlx-lm", "mlx_lm", "from mlx_lm import", "model loading",
-  "generate", "stream_generate", "KVCache", "LoRA fine-tuning", "model
-  quantization", "GGUF", "safetensors", or any LLM inference/training on Apple
-  silicon using MLX. Covers model architecture, generation pipelines, caching,
-  quantization, fine-tuning, and server deployment.
+  Scan project imports for "import mlx_lm", "from mlx_lm import" to determine
+  applicability. Also triggers on "mlx-lm", "generate", "stream_generate",
+  "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
+  or any LLM inference/training on Apple silicon using MLX. Covers model
+  architecture, generation pipelines, caching, quantization, fine-tuning, and
+  server deployment. For core MLX concepts, load the mlx skill first.
 ---
 
 # mlx-lm
