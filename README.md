@@ -41,7 +41,7 @@ Performance optimization for MLX code. Triggers on explicit optimization request
 ### One-liner (uv)
 
 ```
-uvx --from git+https://github.com/awni/mlx-skills.git mlx-skills --claude --force
+uv run mlx-skills --claude --force
 ```
 
 Other targets: `--codex`, `--opencode`, or `--dest /path/to/skills`.
