@@ -105,38 +105,21 @@ def generator():
 
 ### Type Promotion
 
-One of the most common performance issues comes from accidental up-casting.
-Make sure you understand how type promotion works in MLX. The inputs to an MLX
-operation are typically promoted to a common type which doesn't lose precision.
-For example:
+For complete type promotion rules, load the `mlx` skill's
+`references/fundamentals.md`. Key performance implication: accidental
+up-casting from float16/bfloat16 to float32 is one of the most common
+performance issues. The critical rule:
 
 ```python
-x = mx.array(1.0, mx.float32) * mx.array(2.0, mx.float16)
+# BAD: mx.array(2.0) defaults to float32, promotes everything
+x = my_fp16_array * mx.array(2.0)  # Result is float32!
+
+# GOOD: Python scalars are weakly typed, preserve input dtype
+x = my_fp16_array * 2.0  # Result stays float16
 ```
 
-will result in `x` with type `mx.float32`. Similarly:
-
-```python
-x = mx.array(1.0, mx.bfloat16) * mx.array(2.0, mx.float16)
-```
-
-will result in `x` with type `mx.float32`. A common mistake is to multiply a
-half-precision array by a default-typed scalar array which up-casts everything
-to `mx.float32`:
-
-```python
-# Warning: x has type mx.float32
-x = my_fp16_array * mx.array(2.0)
-```
-
-To multiply by a scalar while preserving the input type, use Python scalars.
-Python scalars are weakly typed and have more relaxed promotion rules when
-used with MLX arrays.
-
-```python
-# Ok, x has type mx.float16
-x = my_fp16_array * 2.0
-```
+Also watch for `mx.zeros(shape)` (defaults to float32) and mixing bfloat16
+with float16 (promotes to float32).
 
 ### Operations
 
@@ -184,62 +167,24 @@ higher precision rather than explicitly casting the input and output.
 
 ### Compile
 
-Compiling graphs with `mx.compile` can make them run a lot faster. But there
-are some sharp-edges that are good to be aware of.
+For how `mx.compile` works (tracing, fusion, recompilation triggers, closures),
+load the `mlx` skill's `references/fundamentals.md`. This section focuses on
+optimization-specific guidance.
 
-First, be aware of when a function will be recompiled. Recompilation is
-relatively expensive and should only be done if there is sufficient work over
-which to amortize the cost.
+**What to compile:**
+- Functions with many element-wise operations (activation functions, normalization)
+- Loss functions called repeatedly with the same shapes
+- For models with fixed-shape inputs, compile the entire forward pass
 
-The default behavior of `mx.compile` is to do a shape-dependent compilation.
-This means the function will be recompiled if the shape of any input changes.
+**When shapeless helps:**
+- `mx.compile(fn, shapeless=True)` avoids recompilation on shape changes
+- Use with caution -- silently produces wrong results if shape-dependent logic exists
+- Docs: https://ml-explore.github.io/mlx/build/html/usage/compile.html#shapeless-compilation
 
-MLX supports a shapeless compilation by passing `shapeless=True` to
-`mx.compile`. It's easy to make hard-to-detect mistakes with shapeless
-compilation. Make sure to read and understand the documentation and use it
-with care:
-https://ml-explore.github.io/mlx/build/html/usage/compile.html#shapeless-compilation
-
-A function will also be recompiled if any constant inputs change:
-
-```python
-@mx.compile
-def fun(x, scale):
-  return scale * x
-
-fun(x, 3)
-
-# Recompiles!
-fun(x, 4)
-```
-
-In this case a simple fix is to make `scale` an `mx.array`.
-
-#### Compiling Closures
-
-Be careful when compiling a closure where the function encloses any
-`mx.array`.
-
-```python
-y = some_function()
-
-@mx.compile
-def fun(x):
-  return x + y
-```
-
-Since `y` is not an input to `fun`, the compiled graph will include the entire
-computation which produces `y`. Usually you only want to compute `y` one time
-and re-use it in the compiled function. Either explicitly pass it as an input
-to `fun` or pass it as an implicit input to `mx.compile` like so:
-
-```python
-y = some_function()
-
-@partial(mx.compile, inputs=[y])
-def fun(x):
-  return x + y
-```
+**Avoiding recompilation overhead:**
+- Make varying scalars into `mx.array` (constants cause recompilation)
+- Use `inputs=[...]` for closures over `mx.array` values
+- Recompilation is expensive -- only worth it if there is sufficient work to amortize
 
 ### Memory Use
 

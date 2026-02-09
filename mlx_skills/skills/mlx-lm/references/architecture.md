@@ -1,31 +1,9 @@
-# MLX Ecosystem
+# mlx-lm Architecture
 
-Architecture and integration patterns for the MLX ecosystem packages.
+Architecture and integration patterns for mlx-lm, Apple's official language
+model library for MLX.
 
-## Ecosystem Overview
-
-```
-mlx (core)
-  |
-  +-- mlx.core (mx)      Array operations, lazy evaluation, compilation
-  +-- mlx.nn              Neural network layers, optimizers, losses
-  +-- mlx.utils           Tree utilities, serialization
-  +-- mlx.optimizers      SGD, Adam, AdamW, Lion, etc.
-  |
-  +-- mlx-lm (official)   Language model inference and fine-tuning
-  |     +-- models/        40+ model architectures (Llama, Mistral, Qwen, etc.)
-  |     +-- tuner/         LoRA, DoRA fine-tuning
-  |     +-- generate.py    Single and batch generation
-  |     +-- server.py      OpenAI-compatible API server
-  |
-  +-- mlx-vlm (third-party) Vision-language models
-        +-- models/         VLM architectures (LLaVA, Qwen-VL, etc.)
-        +-- utils.py        Model loading, generation
-```
-
-## mlx-lm Architecture
-
-### Directory Structure
+## Directory Structure
 
 ```
 mlx_lm/
@@ -50,7 +28,7 @@ mlx_lm/
   tokenizer_utils.py    TokenizerWrapper for unified tokenizer interface
 ```
 
-### Model Loading Flow
+## Model Loading Flow
 
 ```python
 from mlx_lm import load
@@ -68,9 +46,9 @@ What happens internally:
 6. Call `model.sanitize(weights)` to filter unnecessary keys
 7. Apply quantization config if present (replaces `nn.Linear` with `nn.QuantizedLinear`)
 8. Load adapter weights if `adapter_path` specified
-9. Call `mx.eval(model.parameters())` to materialize weights
+9. Materialize weights by evaluating model parameters
 
-### Generation Flow
+## Generation Flow
 
 ```
 Input: prompt string
@@ -101,7 +79,7 @@ Generation loop (async pipeline):
 Detokenize -> text
 ```
 
-### Model Registration
+## Model Registration
 
 Each model implements a standard interface:
 
@@ -113,6 +91,7 @@ class ModelArgs(BaseModelArgs):
 
 class Model(nn.Module):
     def __init__(self, args: ModelArgs): ...
+    # inputs: (B, L) token IDs -> returns (B, L, vocab_size) logits
     def __call__(self, inputs, cache=None, input_embeddings=None): ...
 
     @property
@@ -129,7 +108,17 @@ class Model(nn.Module):
 The model is discovered by matching `model_type` in the config to the model
 file. The convention is `model_type = "llama"` maps to `models/llama.py`.
 
-### Fine-Tuning Flow
+### Required Interface
+
+| Method/Property | Purpose |
+|-----------------|---------|
+| `__call__(inputs, cache, input_embeddings)` | Forward pass returning logits |
+| `layers` property | Access to transformer layers for iteration |
+| `make_cache()` | Create appropriate cache type per layer |
+| `sanitize(weights)` | Filter/rename loaded weights before applying |
+| `shard(group)` (optional) | Distribute model across multiple devices |
+
+## Fine-Tuning Flow
 
 ```python
 from mlx_lm import lora
@@ -145,60 +134,20 @@ model.apply_to_modules(lambda k, m: m.unfreeze() if "lora" in k else None)
 # Standard training loop with gradient checkpointing
 for batch in dataset:
     loss = step(batch)
+    # Evaluate model parameters and optimizer state
     mx.eval(model.parameters(), optimizer.state)
 
 # Save adapters (only LoRA weights)
-mx.save_safetensors("adapters.safetensors", dict(tree_flatten(model.trainable_parameters())))
+mx.save_safetensors(
+    "adapters.safetensors",
+    dict(tree_flatten(model.trainable_parameters()))
+)
 
 # Fuse adapters for inference
 for name, module in model.named_modules():
     if hasattr(module, "fuse"):
         parent[name] = module.fuse()  # Merges LoRA weights into base
 ```
-
-## mlx-vlm Architecture
-
-mlx-vlm extends mlx-lm patterns for vision-language models.
-
-### Key Differences from mlx-lm
-
-1. **Two-stage architecture**: Vision encoder + Language model
-2. **Image preprocessing**: Resizing, normalization, patch extraction
-3. **Multi-modal inputs**: Both text tokens and image embeddings
-4. **Cross-attention or projection**: Different VLMs connect vision to language differently
-
-### Common VLM Pattern
-
-```python
-class VLMModel(nn.Module):
-    def __init__(self, config):
-        self.vision_model = VisionEncoder(config.vision_config)
-        self.language_model = LanguageModel(config.text_config)
-        self.multi_modal_projector = nn.Linear(
-            config.vision_config.hidden_size,
-            config.text_config.hidden_size
-        )
-
-    def __call__(self, input_ids, pixel_values=None, cache=None):
-        if pixel_values is not None:
-            image_features = self.vision_model(pixel_values)
-            image_features = self.multi_modal_projector(image_features)
-            # Merge image and text embeddings
-            inputs_embeds = self._merge_embeddings(input_ids, image_features)
-        else:
-            inputs_embeds = self.language_model.embed_tokens(input_ids)
-
-        return self.language_model(input_ids, cache=cache, input_embeddings=inputs_embeds)
-```
-
-### Trust Level
-
-mlx-vlm is third-party code. When using its patterns:
-
-- Verify attention implementations match mlx-lm conventions
-- Check that KV cache usage follows the standard pattern
-- Confirm fast ops are used where appropriate
-- Watch for type promotion issues in the vision encoder
 
 ## Integration Patterns
 
@@ -244,47 +193,39 @@ mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
 This exposes `/v1/chat/completions` and `/v1/completions` endpoints using
 the `BatchGenerator` for concurrent request handling.
 
-## Core MLX Layers Reference
+## Sampling
 
-Key layers from `mlx.nn`:
+mlx-lm implements several sampling strategies in `sample_utils.py`:
 
-| Layer | Notes |
-|-------|-------|
-| `nn.Linear` | Standard linear; stores `weight` as `(output, input)` |
-| `nn.QuantizedLinear` | Quantized weights; transparent interface |
-| `nn.Embedding` | Standard embedding lookup |
-| `nn.RMSNorm` | Root mean square normalization |
-| `nn.LayerNorm` | Standard layer normalization |
-| `nn.RoPE` | Rotary position embeddings |
-| `nn.Dropout` | Standard dropout (only during training) |
-| `nn.MultiHeadAttention` | Built-in MHA (mlx-lm implements custom) |
-| `nn.Transformer` | Built-in transformer (mlx-lm implements custom) |
+| Strategy | Description |
+|----------|-------------|
+| Temperature | Scale logits before softmax to control randomness |
+| Top-p (nucleus) | Sample from smallest set whose cumulative probability exceeds p |
+| Top-k | Sample from the k most likely tokens |
+| Min-p | Filter tokens below a minimum probability threshold |
+| Repetition penalty | Reduce probability of recently generated tokens |
+| XTC | Extended temperature-controlled sampling |
 
-Note: mlx-lm implements its own attention and transformer blocks rather than
-using `nn.MultiHeadAttention`/`nn.Transformer`, because the custom
-implementations integrate better with KV caching, RoPE variants, and
-quantization.
+Samplers are composable and applied in sequence during the `_step` function
+within the generation loop.
 
-## Optimizers Reference
+## mlx-vlm
 
-From `mlx.optimizers`:
+mlx-vlm is a third-party library that extends mlx-lm patterns for
+vision-language models.
 
-| Optimizer | Key Args |
-|-----------|----------|
-| `SGD` | `learning_rate`, `momentum`, `weight_decay` |
-| `Adam` | `learning_rate`, `betas`, `eps` |
-| `AdamW` | `learning_rate`, `betas`, `eps`, `weight_decay` |
-| `Adagrad` | `learning_rate`, `eps` |
-| `Lion` | `learning_rate`, `betas`, `weight_decay` |
+### Key Differences from mlx-lm
 
-Usage:
-```python
-optimizer = optim.AdamW(learning_rate=1e-5, weight_decay=0.01)
-optimizer.update(model, grads)
-```
+1. **Two-stage architecture**: Vision encoder + Language model
+2. **Image preprocessing**: Resizing, normalization, patch extraction
+3. **Multi-modal inputs**: Both text tokens and image embeddings
+4. **Cross-attention or projection**: Different VLMs connect vision to language differently
 
-With learning rate schedules:
-```python
-schedule = optim.linear_schedule(1e-5, 1e-6, steps=1000)
-optimizer = optim.AdamW(learning_rate=schedule)
-```
+### Trust Level
+
+mlx-vlm is third-party code. When using its patterns:
+
+- Verify attention implementations match mlx-lm conventions
+- Check that KV cache usage follows the standard pattern
+- Confirm fast ops are used where appropriate
+- Watch for type promotion issues in the vision encoder

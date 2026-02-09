@@ -1,26 +1,67 @@
 #!/usr/bin/env python3
 """
-Scan coderef repos for recent changes and produce a structured update report.
+Scan upstream MLX repos for recent changes and produce a structured update report.
+
+By default, fetches directly from GitHub (shallow bare clones scoped to the
+time window). No local setup required.
+
+Override with --repos-dir to use existing local clones instead.
 
 Usage:
-    uv run python check_updates.py --since 30days
-    uv run python check_updates.py --since 2024-01-15
-    uv run python check_updates.py --since 7days --repos mlx-lm mlx
+    uv run python scripts/check_updates.py --since 30days
+    uv run python scripts/check_updates.py --since 2024-01-15 --repos mlx mlx-lm
+    uv run python scripts/check_updates.py --repos-dir ~/code/upstream --since 30days
 
-Output: Markdown report with new APIs, pattern changes, notable commits,
-and suggested skill updates.
+Output: Markdown report with watched file changes, potential breaking changes,
+notable commits, and suggested skill updates.
 """
 
 import argparse
 import ast
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional
 
 
+DEFAULT_REPOS = {
+    "mlx": "https://github.com/ml-explore/mlx.git",
+    "mlx-lm": "https://github.com/ml-explore/mlx-lm.git",
+    "mlx-vlm": "https://github.com/Blaizzy/mlx-vlm.git",
+    "mlx-examples": "https://github.com/ml-explore/mlx-examples.git",
+}
+
 # Files to watch closely for pattern changes
 WATCHED_FILES = {
+    "mlx": [
+        # NN layers
+        "python/mlx/nn/layers/linear.py",
+        "python/mlx/nn/layers/normalization.py",
+        "python/mlx/nn/layers/transformer.py",
+        "python/mlx/nn/layers/activations.py",
+        "python/mlx/nn/layers/convolution.py",
+        "python/mlx/nn/layers/recurrent.py",
+        "python/mlx/nn/layers/positional_encoding.py",
+        "python/mlx/nn/layers/quantized.py",
+        "python/mlx/nn/layers/embedding.py",
+        # NN utilities
+        "python/mlx/nn/losses.py",
+        "python/mlx/nn/init.py",
+        "python/mlx/nn/utils.py",
+        # Optimizers
+        "python/mlx/optimizers/__init__.py",
+        "python/mlx/optimizers/optimizers.py",
+        "python/mlx/optimizers/schedulers.py",
+        # Core
+        "python/mlx/utils.py",
+        # Docs
+        "docs/src/usage/lazy_evaluation.rst",
+        "docs/src/usage/compile.rst",
+        "docs/src/usage/unified_memory.rst",
+    ],
     "mlx-lm": [
         "mlx_lm/generate.py",
         "mlx_lm/models/cache.py",
@@ -30,15 +71,6 @@ WATCHED_FILES = {
         "mlx_lm/tuner/trainer.py",
         "mlx_lm/models/llama.py",
         "mlx_lm/sample_utils.py",
-    ],
-    "mlx": [
-        "python/mlx/nn/layers/linear.py",
-        "python/mlx/nn/layers/normalization.py",
-        "python/mlx/nn/layers/transformer.py",
-        "python/mlx/nn/layers/activations.py",
-        "python/mlx/optimizers.py",
-        "docs/src/usage/lazy_evaluation.rst",
-        "docs/src/usage/compile.rst",
     ],
     "mlx-vlm": [
         "mlx_vlm/utils.py",
@@ -57,16 +89,18 @@ DEPRECATION_KEYWORDS = [
 ]
 
 
-def find_coderef_root() -> Path:
-    """Find the coderef directory relative to this script."""
-    script_dir = Path(__file__).resolve().parent
-    # Walk up to find coderef
-    for parent in [script_dir] + list(script_dir.parents):
-        candidate = parent / "coderef"
-        if candidate.is_dir():
-            return candidate
-    # Fall back to relative path from repo root
-    return script_dir.parents[3] / "coderef"
+def clone_repo(url: str, dest: Path, since: str) -> bool:
+    """Shallow bare clone scoped to the time window. Returns True on success."""
+    result = subprocess.run(
+        [
+            "git", "clone", "--bare", "--single-branch",
+            "--shallow-since", since, url, str(dest),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    return result.returncode == 0
 
 
 def run_git(repo_path: Path, *args: str) -> Optional[str]:
@@ -196,18 +230,18 @@ def analyze_watched_files(
 
 
 def generate_report(
-    coderef_root: Path, since: str, repos: Optional[list[str]] = None
+    repos_dir: Path, since: str, repos: Optional[list[str]] = None
 ) -> str:
     """Generate the full update report."""
     lines = [
-        f"# MLX Skill Update Report",
-        f"",
+        "# MLX Skill Update Report",
+        "",
         f"Changes since: {since}",
-        f"",
+        "",
     ]
 
     available_repos = sorted(
-        d.name for d in coderef_root.iterdir()
+        d.name for d in repos_dir.iterdir()
         if d.is_dir() and not d.name.startswith(".")
     )
 
@@ -217,13 +251,13 @@ def generate_report(
         target_repos = available_repos
 
     if not target_repos:
-        lines.append("No repos found in coderef/")
+        lines.append(f"No repos found in {repos_dir}")
         return "\n".join(lines)
 
     has_updates = False
 
     for repo_name in target_repos:
-        repo_path = coderef_root / repo_name
+        repo_path = repos_dir / repo_name
         commits = get_recent_commits(repo_path, since)
         changed_files = get_changed_files(repo_path, since)
 
@@ -234,29 +268,29 @@ def generate_report(
         py_files = [f for f in changed_files if f.endswith(".py")]
 
         lines.append(f"## {repo_name}")
-        lines.append(f"")
+        lines.append("")
         lines.append(f"**{len(commits)} commits**, **{len(changed_files)} files changed** ({len(py_files)} Python)")
-        lines.append(f"")
+        lines.append("")
 
         # Watched file changes
         watched_hits = analyze_watched_files(repo_path, repo_name, changed_files)
         if watched_hits:
-            lines.append(f"### Watched File Changes")
-            lines.append(f"")
+            lines.append("### Watched File Changes")
+            lines.append("")
             lines.extend(watched_hits)
-            lines.append(f"")
+            lines.append("")
 
         # Deprecation / breaking changes
         deprecations = check_deprecations(commits)
         if deprecations:
-            lines.append(f"### Potential Breaking Changes")
-            lines.append(f"")
+            lines.append("### Potential Breaking Changes")
+            lines.append("")
             lines.extend(deprecations)
-            lines.append(f"")
+            lines.append("")
 
         # Notable commits (first 15)
-        lines.append(f"### Recent Commits")
-        lines.append(f"")
+        lines.append("### Recent Commits")
+        lines.append("")
         for commit in commits[:15]:
             lines.append(
                 f"  - `{commit['hash']}` {commit['subject']} "
@@ -264,7 +298,7 @@ def generate_report(
             )
         if len(commits) > 15:
             lines.append(f"  - ... and {len(commits) - 15} more")
-        lines.append(f"")
+        lines.append("")
 
         # Changed Python files of interest
         if py_files:
@@ -273,29 +307,29 @@ def generate_report(
             other_files = [f for f in py_files if f not in model_files and f not in tuner_files]
 
             if model_files:
-                lines.append(f"### Model Files Changed")
-                lines.append(f"")
+                lines.append("### Model Files Changed")
+                lines.append("")
                 for f in model_files[:20]:
                     lines.append(f"  - `{f}`")
                 if len(model_files) > 20:
                     lines.append(f"  - ... and {len(model_files) - 20} more")
-                lines.append(f"")
+                lines.append("")
 
             if tuner_files:
-                lines.append(f"### Tuner Files Changed")
-                lines.append(f"")
+                lines.append("### Tuner Files Changed")
+                lines.append("")
                 for f in tuner_files:
                     lines.append(f"  - `{f}`")
-                lines.append(f"")
+                lines.append("")
 
             if other_files:
-                lines.append(f"### Other Python Files Changed")
-                lines.append(f"")
+                lines.append("### Other Python Files Changed")
+                lines.append("")
                 for f in other_files[:15]:
                     lines.append(f"  - `{f}`")
                 if len(other_files) > 15:
                     lines.append(f"  - ... and {len(other_files) - 15} more")
-                lines.append(f"")
+                lines.append("")
 
     if not has_updates:
         lines.append("No changes found in the specified time range.")
@@ -308,10 +342,11 @@ def generate_report(
     lines.append("Review the watched file changes above and update the following")
     lines.append("skill reference files as needed:")
     lines.append("")
-    lines.append("- `references/patterns.md` -- if model patterns changed (cache, attention, generation)")
-    lines.append("- `references/fundamentals.md` -- if core MLX APIs changed")
-    lines.append("- `references/ecosystem.md` -- if new models or tools were added")
-    lines.append("- `references/anti-patterns.md` -- if new footguns were discovered")
+    lines.append("- `mlx/references/nn-and-training.md` -- if nn layers, losses, optimizers, or schedulers changed")
+    lines.append("- `mlx/references/fundamentals.md` -- if core MLX APIs changed")
+    lines.append("- `mlx/references/anti-patterns.md` -- if new footguns were discovered")
+    lines.append("- `mlx-lm/references/patterns.md` -- if model patterns changed (cache, attention, generation)")
+    lines.append("- `mlx-lm/references/architecture.md` -- if loading, generation flow, or model registration changed")
     lines.append("- `fast-mlx/references/*.md` -- if optimization techniques changed")
     lines.append("")
 
@@ -320,7 +355,7 @@ def generate_report(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Scan coderef repos for recent changes affecting MLX skills."
+        description="Scan upstream MLX repos for recent changes affecting skills."
     )
     parser.add_argument(
         "--since",
@@ -330,12 +365,17 @@ def main():
     parser.add_argument(
         "--repos",
         nargs="*",
-        help="Specific repos to scan (default: all in coderef/)",
+        choices=list(DEFAULT_REPOS.keys()),
+        help="Specific repos to scan (default: all)",
     )
     parser.add_argument(
-        "--coderef",
+        "--repos-dir",
         type=Path,
-        help="Path to coderef directory (auto-detected if not specified)",
+        default=os.environ.get("MLX_SKILLS_REPOS"),
+        help=(
+            "Use local git clones instead of fetching from GitHub. "
+            "Can also be set via MLX_SKILLS_REPOS env var."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -344,13 +384,32 @@ def main():
     )
     args = parser.parse_args()
 
-    coderef_root = args.coderef or find_coderef_root()
-    if not coderef_root.is_dir():
-        print(f"Error: coderef directory not found at {coderef_root}", file=sys.stderr)
-        print("Use --coderef to specify the path.", file=sys.stderr)
-        sys.exit(1)
+    if args.repos_dir:
+        # Local mode: use existing clones
+        repos_dir = Path(args.repos_dir).expanduser().resolve()
+        if not repos_dir.is_dir():
+            print(f"Error: directory not found at {repos_dir}", file=sys.stderr)
+            sys.exit(1)
+        report = generate_report(repos_dir, args.since, args.repos)
+    else:
+        # Remote mode: shallow-clone from GitHub to a temp directory
+        targets = DEFAULT_REPOS
+        if args.repos:
+            targets = {k: v for k, v in targets.items() if k in args.repos}
 
-    report = generate_report(coderef_root, args.since, args.repos)
+        tmp_dir = Path(tempfile.mkdtemp(prefix="mlx-skills-"))
+        try:
+            for name, url in targets.items():
+                print(f"Fetching {name}...", file=sys.stderr, end=" ", flush=True)
+                dest = tmp_dir / name
+                if clone_repo(url, dest, args.since):
+                    print("done", file=sys.stderr)
+                else:
+                    print("skipped (no recent commits or clone failed)", file=sys.stderr)
+            print("", file=sys.stderr)
+            report = generate_report(tmp_dir, args.since, args.repos)
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     if args.output:
         args.output.write_text(report)

@@ -3,6 +3,9 @@
 Performance optimization techniques specific to language model inference and
 training on MLX. All patterns sourced from mlx-lm.
 
+For mlx-lm architecture, generation pipeline, and KV cache internals, load the
+`mlx-lm` skill. This guide focuses on optimization techniques.
+
 ## KV Cache Optimization
 
 ### Choose the Right Cache Type

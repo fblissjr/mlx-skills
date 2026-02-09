@@ -2,9 +2,11 @@
 name: mlx
 description: >
   Use when writing, debugging, reviewing, or analyzing MLX code. Triggers on
-  "MLX", "mlx-lm", "mlx-vlm", "Apple silicon ML", "mx.array", "mx.compile",
-  "mx.eval", or any project using the mlx framework. Covers core concepts,
-  idiomatic patterns, ecosystem integration, and debugging.
+  "MLX", "Apple silicon ML", "mx.array", "mx.compile", "mx.eval", "nn.Module",
+  "nn.Linear", "mlx.optimizers", "training loop", or any project using the mlx
+  framework. Covers core concepts, nn module system, layers, optimizers,
+  training patterns, and debugging. For mlx-lm specific patterns, load the
+  mlx-lm skill.
 ---
 
 # MLX
@@ -19,80 +21,27 @@ the compilation model.
 ### Lazy Evaluation
 
 Every MLX operation builds a computation graph -- nothing executes until you
-explicitly evaluate. This is the single most important difference from
-NumPy/PyTorch.
+explicitly evaluate. Evaluate via `mx.eval(...)` or implicitly via `.item()`,
+`.tolist()`, NumPy conversion, or printing. Evaluate at iteration boundaries:
+after one training step, one token, or one denoising step.
 
-```python
-import mlx.core as mx
-
-x = mx.array([1, 2, 3])
-y = x + 1          # No computation yet -- just graph construction
-z = y * 2          # Still no computation
-mx.eval(z)         # NOW the entire graph executes
-```
-
-Evaluation happens explicitly via `mx.eval(...)` or implicitly when you call
-`.item()`, `.tolist()`, convert to NumPy, or print. The evaluation granularity
-matters:
-
-- Evaluate too often: overhead from repeated graph dispatch
-- Evaluate too rarely: graph gets large, high memory pressure
-
-The right place to evaluate is at iteration boundaries: after one training step,
-after generating one token, after one denoising step.
+For details on evaluation strategy, async evaluation, and the pipelining
+pattern, see `references/fundamentals.md`.
 
 ### Unified Memory
 
-CPU and GPU share the same memory on Apple silicon. Arrays live in shared memory
-and can be used by either processor without explicit transfers.
-
-- No `.to(device)` or `.cuda()` calls
-- No host-to-device copies
-- Data stays in one place; the processor comes to the data
-- Memory pressure is the main constraint (not VRAM vs RAM)
-
-### Streams
-
-MLX uses streams to order operations. All operations on the same stream execute
-in order. Operations on different streams can run concurrently.
-
-```python
-# Default: all operations on the default GPU stream
-s = mx.new_stream(mx.gpu)
-with mx.stream(s):
-    # Operations here go on stream s
-    result = model(x)
-```
-
-The generation loop in mlx-lm uses a dedicated stream to pipeline graph
-construction with computation via `mx.async_eval`.
+CPU and GPU share the same memory on Apple silicon. No `.to(device)` or
+`.cuda()` calls. Data stays in one place; the processor comes to the data.
+Memory pressure is the main constraint.
 
 ### Compilation
 
-`mx.compile` traces and fuses operations. Compiled functions run significantly
-faster, especially for element-wise operations. Be aware of recompilation
-triggers:
-
-- **Shape changes** cause recompilation (default behavior). Use `shapeless=True`
-  with caution.
-- **Constant input changes** cause recompilation. Wrap varying scalars in
-  `mx.array` to make them traceable inputs.
-- **Closures** over `mx.array` values include the closed-over computation in
-  the compiled graph. Pass arrays as explicit inputs or use `mx.compile(inputs=[...])`.
-
-```python
-from functools import partial
-
-state = mx.array([1.0])
-
-@partial(mx.compile, inputs=[state])
-def step(x):
-    return x + state  # state tracked as implicit input, not recomputed
-```
+`mx.compile` traces and fuses operations for faster execution. Be aware:
+shape changes and constant input changes cause recompilation; closures over
+`mx.array` values include the closed-over computation in the graph. For
+details and examples, see `references/fundamentals.md`.
 
 ### Function Transformations
-
-MLX supports JAX-style function transformations:
 
 | Transform | Purpose |
 |-----------|---------|
@@ -107,21 +56,11 @@ These compose: `mx.compile(mx.grad(fn))` works.
 
 ### Type Promotion
 
-MLX promotes types to avoid precision loss. The critical rule: **Python scalars
-are weakly typed**, `mx.array` scalars are strongly typed.
-
-```python
-x = mx.array([1.0], mx.float16)
-x * 2.0             # float16 -- Python float is weak
-x * mx.array(2.0)   # float32 -- mx.array default is float32, promotes!
-```
-
-Always use Python scalars for constants when working in half precision. If you
-must use `mx.array`, match the dtype explicitly.
+Python scalars are weakly typed, `mx.array` scalars are strongly typed.
+Always use Python scalars for constants in half precision. For the full
+promotion rules, see `references/fundamentals.md`.
 
 ## Ecosystem
-
-MLX has a clear hierarchy of trust:
 
 | Layer | Package | Trust Level |
 |-------|---------|-------------|
@@ -129,25 +68,16 @@ MLX has a clear hierarchy of trust:
 | Gold Standard | `mlx-lm` | Official reference for LLM patterns |
 | Functional | `mlx-vlm` | Third-party VLM; verify patterns against mlx-lm |
 
-### mlx-lm (Gold Standard)
+## Quick Reference: mx.fast Ops
 
-mlx-lm is the reference implementation for language models on MLX. When in
-doubt about how to structure MLX code, look at mlx-lm first. Key patterns:
+| Op | Replaces |
+|----|----------|
+| `mx.fast.rms_norm` | Manual RMS normalization (accumulates in higher precision) |
+| `mx.fast.layer_norm` | Manual layer normalization (accumulates in higher precision) |
+| `mx.fast.rope` | Manual rotary position embedding |
+| `mx.fast.scaled_dot_product_attention` | Manual attention computation |
 
-- **Model structure**: `ModelArgs` dataclass + `nn.Module` subclasses for
-  Attention, MLP, TransformerBlock, Model
-- **KV cache**: `KVCache` (standard), `RotatingKVCache` (sliding window),
-  `QuantizedKVCache` (memory savings), `BatchKVCache` (batched generation)
-- **Generation**: Async evaluation pipeline in `generate_step` with dedicated
-  stream, prefill chunking, and `mx.async_eval` for latency hiding
-- **Quantization**: `nn.QuantizedLinear` for weight quantization, quantized KV
-  cache for activation memory
-- **Fine-tuning**: LoRA via `LoRALinear.from_base()` wrapping existing layers
-
-### mlx-vlm
-
-Third-party vision-language model support. Uses mlx-lm patterns but adds vision
-encoders. Verify its patterns match mlx-lm before adopting.
+Always prefer `mx.fast` ops over manual implementations.
 
 ## Quick Reference: MLX vs Other Frameworks
 
@@ -188,9 +118,15 @@ Load these on demand for deeper guidance:
 
 - `references/fundamentals.md` -- Lazy evaluation, unified memory, streams,
   compile, transformations, type system (detailed)
-- `references/patterns.md` -- Idiomatic MLX patterns from mlx-lm: nn.Module,
-  cache, attention, generation, quantization, LoRA, tree ops
+- `references/nn-and-training.md` -- nn.Module system, all layers, losses,
+  optimizers, schedulers, training loop patterns
 - `references/anti-patterns.md` -- Common mistakes from NumPy/PyTorch habits
-- `references/ecosystem.md` -- mlx-lm and mlx-vlm architecture details
 - `references/debugging.md` -- Shape debugging, evaluation issues, memory
   profiling, common errors
+
+## Related Skills
+
+- **`mlx-lm`** -- mlx-lm patterns: model architecture, generation, KV cache,
+  quantization, LoRA fine-tuning, server
+- **`fast-mlx`** -- Performance optimization: profiling, compilation tuning,
+  memory reduction, async pipeline optimization

@@ -56,7 +56,7 @@ for x, y in dataset:
 ### Breaking Async Pipeline
 
 ```python
-# BAD: synchronous work on the generation stream stalls the pipeline
+# BAD: synchronous work on the computation stream stalls the pipeline
 for out in generator():
     out = out * 2
     mx.eval(out)  # Blocks the generation stream!
@@ -139,6 +139,9 @@ x = mx.fast.rms_norm(x, w, eps=eps)
 Same for `mx.fast.layer_norm` and `mx.softmax(x, precise=True)`.
 
 ## Compilation Mistakes
+
+For how `mx.compile` works (tracing, fusion, recompilation triggers), see
+`references/fundamentals.md`. The mistakes below are the most common pitfalls.
 
 ### Recompiling on Every Call
 

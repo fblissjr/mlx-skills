@@ -102,7 +102,7 @@ with variable-shape computations.
 
 ### Wired Memory
 
-For large models, mlx-lm uses `mx.set_wired_limit()` to pin model weights in
+For large models, use `mx.set_wired_limit()` to pin model weights in
 physical memory, preventing the OS from paging them out:
 
 ```python

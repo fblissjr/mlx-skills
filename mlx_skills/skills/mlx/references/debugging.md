@@ -28,20 +28,22 @@ x = x.reshape(B, self.n_heads, L, -1)  # Elements in wrong positions!
 x = x.reshape(B, L, self.n_heads, -1).transpose(0, 2, 1, 3)
 ```
 
-**Batch dimension assumptions:**
+**Missing batch dimension:**
 ```python
-# mlx-lm always uses batch dimension, even for single sequences
-# Model input should be (B, L), not just (L,)
+# Many models expect a batch dimension, even for single inputs
+# Input should be (B, L), not just (L,)
 logits = model(tokens)      # Wrong if tokens is 1-D
 logits = model(tokens[None]) # Correct: adds batch dimension
 ```
 
-**KV cache shapes:**
+**Transpose ordering in multi-head patterns:**
 ```python
-# Cache expects (B, n_kv_heads, L, head_dim)
-# Common mistake: forgetting that keys/values are already transposed
-keys = keys.reshape(B, L, self.n_kv_heads, -1).transpose(0, 2, 1, 3)
-# Now keys is (B, n_kv_heads, L, head_dim) -- correct for cache
+# When splitting heads: (B, L, n_heads * head_dim) -> (B, n_heads, L, head_dim)
+# WRONG: reshape alone changes element order
+x = x.reshape(B, self.n_heads, L, -1)
+
+# CORRECT: reshape then transpose
+x = x.reshape(B, L, self.n_heads, -1).transpose(0, 2, 1, 3)
 ```
 
 ## Evaluation Issues
@@ -86,10 +88,11 @@ x.item()                # Scalar extraction evaluates
 
 ### Async Pipeline Debugging
 
-If your async generation pipeline stalls:
+If your async pipeline stalls:
 
-1. **Check for synchronous evaluation inside `_step`**: Any `mx.eval`, `.item()`,
-   print, or NumPy conversion inside the step function will stall the pipeline.
+1. **Check for synchronous evaluation inside the step function**: Any `mx.eval`,
+   `.item()`, print, or NumPy conversion inside the step function will stall
+   the pipeline.
 
 2. **Check stream conflicts**: Operations on the same stream as the pipeline
    that trigger synchronous evaluation will block.
@@ -256,6 +259,8 @@ For detailed kernel-level profiling, use Xcode's Metal debugger:
 
 See: https://ml-explore.github.io/mlx/build/html/dev/metal_debugger.html
 
+Note: Verify this URL is current -- MLX documentation URLs may change across releases.
+
 ### Timing Individual Operations
 
 ```python
@@ -275,15 +280,3 @@ print(f"Time: {toc - tic:.4f}s")
 Always `mx.synchronize()` before timing and evaluate the result. Otherwise
 you measure graph construction time, not computation time.
 
-### Generation Metrics
-
-mlx-lm's `GenerationResponse` includes built-in metrics:
-
-```python
-for response in stream_generate(model, tokenizer, prompt):
-    pass  # Get last response
-
-print(f"Prompt: {response.prompt_tokens} tokens, {response.prompt_tps:.1f} tok/s")
-print(f"Generation: {response.generation_tokens} tokens, {response.generation_tps:.1f} tok/s")
-print(f"Peak memory: {response.peak_memory:.2f} GB")
-```

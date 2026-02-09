@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlx-skills"
-version = "0.2.0"
+version = "0.3.1"
 description = "Skills that teach AI coding assistants how MLX works."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -15,6 +15,10 @@ Repository = "https://github.com/awni/mlx-skills"
 
 [project.scripts]
 mlx-skills = "mlx_skills.cli:main"
+mlx-skills-validate = "mlx_skills.validate:main"
+
+[dependency-groups]
+dev = ["pytest>=7.0"]
 
 [tool.setuptools]
 package-dir = {"" = "."}
@@ -26,3 +30,6 @@ include = ["mlx_skills*"]
 
 [tool.setuptools.package-data]
 mlx_skills = ["skills/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

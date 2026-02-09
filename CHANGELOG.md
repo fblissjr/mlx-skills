@@ -1,5 +1,86 @@
 # Changelog
 
+## 0.3.1
+
+### Added
+
+- `mlx_skills/validate.py` -- Validation script for skill plugin structure,
+  frontmatter, word counts, reference file existence, and cross-references
+- `mlx-skills-validate` CLI entrypoint in pyproject.toml
+- `tests/` -- Test suite with pytest (conftest, test_validate, test_cli,
+  test_skill_structure)
+- pytest dev dependency and pytest config in pyproject.toml
+
+### Changed
+
+- Deduplicated `mlx/SKILL.md` (~970 words -> ~480 words): lazy eval,
+  compilation, type promotion sections trimmed to summaries with pointers
+  to `references/fundamentals.md`
+- Deduplicated `mlx-lm/SKILL.md` (~860 words -> ~430 words): generation,
+  KV cache, fine-tuning sections trimmed to summaries with pointers to
+  `references/patterns.md`
+- Added cross-references in `fast-mlx/references/fast-mlx-guide.md` (type
+  promotion and compile sections point to `mlx` skill's fundamentals.md)
+- Added cross-reference in `fast-mlx/references/llm-optimization.md` pointing
+  to `mlx-lm` skill for architecture context
+- Added cross-reference in `mlx/references/anti-patterns.md` compilation
+  section pointing to fundamentals.md
+- Relocated `mlx/scripts/check_updates.py` to `scripts/check_updates.py`
+- `mlx/references/fundamentals.md`: genericized wired memory section
+- `mlx/references/nn-and-training.md`: added mlx-lm cross-reference in
+  transformer note; added `key` parameter comment in init_weights
+- `mlx/references/debugging.md`: added URL currency note for Metal debugger
+- `mlx-lm/references/patterns.md`: added routing comment to
+  scaled_dot_product_attention; added prefill_step_size default note
+- `mlx-lm/references/architecture.md`: added input/output shape comment to
+  Model.__call__
+- Updated README.md with validation section and corrected paths
+- `scripts/check_updates.py`: removed hardcoded `coderef` directory convention;
+  now fetches directly from GitHub by default (shallow bare clones to temp dir).
+  `--repos-dir` or `MLX_SKILLS_REPOS` env var available for local clones.
+
+### Removed
+
+- `mlx/scripts/` directory (script moved to project-level `scripts/`)
+
+## 0.3.0
+
+### Added
+
+- **mlx-lm skill**: Separate skill for Apple's official language model library
+  - `SKILL.md` covering model architecture, generation pipelines, KV caching,
+    quantization, fine-tuning, sampling, and server deployment
+  - `references/patterns.md` with idiomatic mlx-lm patterns (moved from mlx skill)
+  - `references/architecture.md` with mlx-lm directory structure, loading flow,
+    generation flow, model registration, fine-tuning flow, and integration patterns
+
+- **mlx nn-and-training reference**: `mlx/references/nn-and-training.md` covering
+  the nn.Module system, building custom layers, all available layers (linear,
+  conv, norm, activation, pooling, dropout, recurrent, transformer, embedding,
+  positional, quantized), loss functions, parameter initialization, optimizers,
+  learning rate schedulers, and training loop patterns (basic, compiled, gradient
+  checkpointing, gradient accumulation, distributed)
+
+### Changed
+
+- `mlx` skill now covers MLX core only (removed mlx-lm specific content from
+  SKILL.md, updated triggers to include nn.Module, nn.Linear, mlx.optimizers,
+  training loop)
+- `mlx/references/debugging.md` updated to remove mlx-lm specific sections
+  (batch dimension, KV cache shapes, generation metrics)
+- `mlx/references/anti-patterns.md` updated "Breaking Async Pipeline" comment
+  to use generic "computation stream" language
+- `mlx/scripts/check_updates.py` expanded WATCHED_FILES to cover nn layers,
+  losses, init, optimizers, schedulers; updated suggested actions to reference
+  both mlx and mlx-lm skill files
+- `fast-mlx/SKILL.md` updated to cross-reference mlx-lm skill
+- `README.md` updated with mlx-lm skill section and revised structure diagram
+
+### Removed
+
+- `mlx/references/ecosystem.md` (content distributed to mlx-lm skill)
+- `mlx/references/patterns.md` (moved to mlx-lm skill)
+
 ## 0.2.0
 
 ### Added
@@ -18,7 +99,7 @@
     loading flow, generation flow, and integration patterns
   - `references/debugging.md` with shape debugging, evaluation issue
     diagnosis, memory profiling, and common error resolution
-  - `scripts/check_updates.py` for scanning coderef repos and generating
+  - `scripts/check_updates.py` for scanning upstream repos and generating
     structured update reports
 
 - **fast-mlx enhancements**: Domain-specific optimization guides

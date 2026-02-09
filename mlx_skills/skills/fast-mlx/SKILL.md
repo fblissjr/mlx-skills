@@ -12,8 +12,9 @@ description: >
 ## Prerequisites
 
 Load the `mlx` skill first if you need background on lazy evaluation, type
-promotion, or other MLX fundamentals. This skill focuses specifically on
-performance optimization.
+promotion, or other MLX fundamentals. Load the `mlx-lm` skill for language
+model-specific patterns. This skill focuses specifically on performance
+optimization.
 
 ## Workflow
 

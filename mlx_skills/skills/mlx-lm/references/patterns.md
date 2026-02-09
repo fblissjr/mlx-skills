@@ -187,6 +187,8 @@ Critical details:
 mlx-lm routes through a wrapper that handles quantized vs regular caches:
 
 ```python
+# Routes to mx.fast.scaled_dot_product_attention for standard caches,
+# or mx.quantized_matmul for quantized KV caches (QuantizedKVCache).
 def scaled_dot_product_attention(queries, keys, values, cache, scale, mask):
     if hasattr(cache, "bits"):
         # Quantized KV cache -- use mx.quantized_matmul
@@ -305,7 +307,7 @@ def _step(input_tokens):
         sampled = sampler(logprobs)
         return sampled, logprobs.squeeze(0)
 
-# Prefill: process prompt in chunks
+# Prefill: process prompt in chunks (prefill_step_size defaults to 512)
 while prompt_remaining > 1:
     model(prompt_chunk[None], cache=prompt_cache)
     mx.eval([c.state for c in prompt_cache])
