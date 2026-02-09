@@ -8,12 +8,6 @@ can invoke them explicitly.
 
 ## Install
 
-### From GitHub (recommended)
-
-```
-uvx --from git+https://github.com/fblissjr/mlx-skills.git mlx-skills --claude --force
-```
-
 ### From local clone
 
 ```
