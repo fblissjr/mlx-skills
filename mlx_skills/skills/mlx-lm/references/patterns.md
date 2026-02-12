@@ -182,6 +182,48 @@ Critical details:
 - GQA handled automatically -- `n_kv_heads < n_heads` with repeat in SDPA
 - Always use `mx.fast.scaled_dot_product_attention` (via the `base.py` wrapper)
 
+### Multi-head Latent Attention (MLA)
+
+DeepSeek V3+ models use MLA, which compresses KV representations via low-rank
+latent projections instead of storing full K/V per head. This dramatically
+reduces cache size.
+
+Key parameters:
+- `kv_lora_rank` (typically 512) -- latent dimension for KV compression
+- `q_lora_rank` (typically 1536) -- latent dimension for query compression
+- `qk_rope_head_dim` (typically 64) -- RoPE-applied portion of Q/K
+
+The cache stores compressed latent vectors + small rope keys instead of full
+K/V tensors per head:
+
+```python
+class DeepseekV3Attention(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        # KV compression: projects to kv_lora_rank + qk_rope_head_dim
+        self.kv_a_proj_with_mqa = nn.Linear(
+            args.hidden_size, args.kv_lora_rank + args.qk_rope_head_dim, bias=False
+        )
+        # Per-head projections via MultiLinear (weight shape: num_heads, out, in)
+        self.embed_q = MultiLinear(args.qk_nope_head_dim, args.kv_lora_rank, n_heads)
+        self.unembed_out = MultiLinear(args.kv_lora_rank, args.v_head_dim, n_heads)
+
+    def __call__(self, x, mask=None, cache=None):
+        # Compress KV into latent + rope keys
+        kv = self.kv_a_proj_with_mqa(x)
+        kv_latent, k_pe = mx.split(kv, [self.kv_lora_rank], axis=-1)
+        # Cache stores (kv_latent, k_pe) -- not full K/V per head
+        kv_latent, k_pe = cache.update_and_fetch(kv_latent, k_pe)
+        ...
+```
+
+`MultiLinear` (from `models/mla.py`) performs per-head projections with weight
+shape `(num_heads, output_dims, input_dims)`. It supports quantization via
+`to_quantized()`.
+
+The model's `make_cache()` returns `CacheList` pairs (one for the latent, one
+for rope keys) per layer.
+
 ### Scaled Dot Product Attention
 
 mlx-lm routes through a wrapper that handles quantized vs regular caches:
@@ -273,6 +315,45 @@ cache = QuantizedKVCache(group_size=64, bits=8)
 
 Used when `--kv-bits` is specified. Trades precision for memory -- useful
 for very long sequences.
+
+### CacheList
+
+Composite cache that pairs multiple caches per layer. Used by MLA models to
+store compressed latent and rope keys separately:
+
+```python
+# MLA model make_cache returns CacheList pairs
+def make_cache(self):
+    return [CacheList(KVCache(), KVCache()) for _ in self.layers]
+```
+
+`CacheList` propagates `update_and_fetch`, `trim`, `filter`, and `state` to
+all sub-caches transparently.
+
+### ChunkedKVCache
+
+Sliding window cache that trims the front when exceeding `chunk_size`:
+
+```python
+cache = ChunkedKVCache(chunk_size=4096)
+```
+
+### ArraysCache
+
+General-purpose indexed cache for non-KV state (e.g., Mamba recurrent states):
+
+```python
+cache = ArraysCache(size=num_layers)
+cache[layer_idx] = state_array
+```
+
+### BatchRotatingKVCache
+
+Rotating cache with batch support and per-sequence left-padding:
+
+```python
+cache = BatchRotatingKVCache(max_size=4096, left_padding=[0, 128, 64])
+```
 
 ### Cache Factory Pattern
 
@@ -483,6 +564,30 @@ def shard(self, group=None):
 Sharding modes:
 - `"all-to-sharded"`: Input replicated, output split across devices
 - `"sharded-to-all"`: Input split, output all-reduced
+
+## Speculative Decoding
+
+A draft model generates `num_draft_tokens` candidate tokens that the main model
+verifies in a single forward pass. On rejection, caches rewind via
+`trim_prompt_cache`:
+
+```python
+from mlx_lm import load, stream_generate
+
+model, tokenizer = load("mlx-community/Llama-3.2-70B-Instruct-4bit")
+draft_model, _ = load("mlx-community/Llama-3.2-3B-Instruct-4bit")
+
+for response in stream_generate(
+    model, tokenizer, prompt,
+    draft_model=draft_model,
+    num_draft_tokens=3,
+):
+    print(response.text, end="")
+```
+
+The draft and main model must share the same tokenizer. The `GenerationResponse`
+includes a `from_draft` field indicating whether each token came from the draft
+model. For tuning guidance, load the `fast-mlx` skill.
 
 ## Training Loop Pattern
 

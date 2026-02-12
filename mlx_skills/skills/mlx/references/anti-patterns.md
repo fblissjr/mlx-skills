@@ -389,6 +389,26 @@ result = x @ W.T + b
 result = mx.addmm(b, x, W)
 ```
 
+## QQLinear Mode Mistakes
+
+### Forgetting Train Mode Before Fine-Tuning
+
+```python
+# BAD: weights stay quantized, no gradients flow
+qlayer = nn.QQLinear.from_linear(layer, mode="nvfp4")
+loss, grads = nn.value_and_grad(model, loss_fn)(model, x, y)  # grads are zero!
+
+# GOOD: call .train() so weights dequantize for training
+qlayer = nn.QQLinear.from_linear(layer, mode="nvfp4")
+model.train()  # Dequantizes QQLinear weights
+loss, grads = nn.value_and_grad(model, loss_fn)(model, x, y)
+```
+
+### Using QQLinear When QuantizedLinear Suffices
+
+If weights do not need to be trainable, prefer `nn.QuantizedLinear` -- it is
+simpler and does not carry the train/eval mode complexity.
+
 ## Softmax Precision
 
 ```python

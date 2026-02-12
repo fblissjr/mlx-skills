@@ -13,7 +13,7 @@ description: >
 # mlx-lm
 
 Apple's official language model library for MLX. Provides inference, generation,
-quantization, and fine-tuning for 40+ transformer architectures on Apple silicon.
+quantization, and fine-tuning for 50+ transformer architectures on Apple silicon.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ fundamentals.
 
 mlx-lm is the reference implementation for running language models on MLX:
 
-- **40+ model architectures**: Llama, Mistral, Qwen, Gemma, Phi, DeepSeek,
+- **50+ model architectures**: Llama, Mistral, Qwen, Gemma, Phi, DeepSeek,
   Cohere, DBRX, and many more
 - **Generation pipelines**: Single-sequence and batch generation with async
   evaluation for low latency
@@ -41,7 +41,9 @@ Every model follows: `ModelArgs(BaseModelArgs)` dataclass for config,
 `Model(nn.Module)` top-level module with required interface (`__call__`,
 `layers` property, `make_cache()`, `sanitize()`), and standard inner components
 (`Attention`, `MLP`, `TransformerBlock`). The model is discovered by matching
-`model_type` in the HuggingFace config to the model file.
+`model_type` in the HuggingFace config to the model file. DeepSeek V3+ models
+use Multi-head Latent Attention (MLA) which compresses KV via low-rank
+projections, dramatically reducing cache size.
 
 For the full architecture patterns with code, see `references/patterns.md`.
 
@@ -50,7 +52,8 @@ For the full architecture patterns with code, see `references/patterns.md`.
 mlx-lm uses an async double-buffer pipeline: prefill prompt in chunks,
 then generate tokens on a dedicated stream with `mx.async_eval` so graph
 construction overlaps computation. Any synchronous evaluation inside the step
-function stalls the pipeline.
+function stalls the pipeline. Speculative decoding is supported via a draft
+model that generates candidate tokens verified by the main model in one pass.
 
 For the complete pipeline pattern, batch generation, and sampling details,
 see `references/patterns.md`.
@@ -76,6 +79,10 @@ packed uint32 weights -- usage is transparent.
 | `RotatingKVCache` | Sliding window attention (e.g., Gemma 2) |
 | `QuantizedKVCache` | Long-context; quantizes K/V entries (`--kv-bits`) |
 | `BatchKVCache` | Batched generation; per-sequence offsets |
+| `CacheList` | Paired caches for MLA (compressed latent + rope keys) |
+| `ChunkedKVCache` | Sliding window; trims front when exceeding chunk_size |
+| `ArraysCache` | General-purpose indexed cache (e.g., Mamba recurrent states) |
+| `BatchRotatingKVCache` | Rotating cache with batch + per-sequence padding |
 
 For cache implementation details and the factory pattern, see
 `references/patterns.md`.

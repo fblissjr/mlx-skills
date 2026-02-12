@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- `nn.QQLinear` documentation: trainable quantized linear layer with `nvfp4`
+  and `mxfp8` modes in nn-and-training.md and anti-patterns.md
+- `Muon` optimizer documentation with MultiOptimizer pairing guidance
+- `nn.init.sparse` and `nn.init.orthogonal` initializer documentation
+- Distributed layers section: `AllToShardedLinear`, `ShardedToAllLinear`,
+  quantized variants, and `nn.shard_linear` factory
+- Multi-head Latent Attention (MLA) pattern from DeepSeek V3 in mlx-lm
+  patterns.md with `MultiLinear` and compressed KV cache
+- New cache types: `CacheList`, `ChunkedKVCache`, `ArraysCache`,
+  `BatchRotatingKVCache` in mlx-lm SKILL.md and patterns.md
+- Speculative decoding pattern with draft model in mlx-lm patterns.md and
+  fast-mlx llm-optimization.md
+- MLA cache optimization subsection in fast-mlx llm-optimization.md
+- Tool calling section in mlx-lm architecture.md (tool_parsers/, chat_templates/)
+- QQLinear mode checklist item in mlx SKILL.md
+
+### Changed
+
+- Updated mlx-lm model architecture count from 40+ to 50+
+- Updated mlx-vlm section: 48+ VLM architectures, processor-centric design,
+  shared mlx-lm utilities (make_sampler, make_logits_processors)
+- Updated speculative decoding in fast-mlx with `trim_prompt_cache` rewind
+  mechanism and CLI parameters
+- Added `val_batches=0` skip-validation note to fine-tuning flow
+
 ## 0.3.1
 
 ### Added

@@ -11,8 +11,10 @@ mlx_lm/
     base.py             BaseModelArgs, create_attention_mask, scaled_dot_product_attention
     cache.py            KVCache, RotatingKVCache, QuantizedKVCache, BatchKVCache, etc.
     rope_utils.py       RoPE variants: Llama3RoPE, YarnRoPE, SuScaledRoPE
+    mla.py              MultiLinear for Multi-head Latent Attention
     llama.py            Reference model implementation
-    qwen2.py, mistral.py, gemma2.py, ...  (40+ models)
+    deepseek_v3.py      DeepSeek V3 (MLA attention)
+    qwen2.py, mistral.py, gemma2.py, ...  (50+ models)
     activations.py      swiglu and other activation functions
     switch_layers.py    MoE (Mixture of Experts) layers
   tuner/
@@ -26,6 +28,8 @@ mlx_lm/
   server.py             OpenAI-compatible HTTP server
   sample_utils.py       Temperature, top-p, top-k, min-p, XTC samplers
   tokenizer_utils.py    TokenizerWrapper for unified tokenizer interface
+  tool_parsers/         Model-specific tool/function calling parsers
+  chat_templates/       Chat template files for tool message formatting
 ```
 
 ## Model Loading Flow
@@ -137,6 +141,8 @@ for batch in dataset:
     # Evaluate model parameters and optimizer state
     mx.eval(model.parameters(), optimizer.state)
 
+# Set val_batches=0 to skip validation (validation set is optional)
+
 # Save adapters (only LoRA weights)
 mx.save_safetensors(
     "adapters.safetensors",
@@ -209,17 +215,29 @@ mlx-lm implements several sampling strategies in `sample_utils.py`:
 Samplers are composable and applied in sequence during the `_step` function
 within the generation loop.
 
+## Tool Calling
+
+The mlx-lm server supports function/tool calling via model-specific parsers in
+`mlx_lm/tool_parsers/`. Each parser implements `parse_tool_call(text, tools)`
+to extract structured function calls from model output. Available parsers
+include Mistral, Pythonic, GLM-4.7, Kimi K2, LongCat, Qwen3-Coder, and others.
+Chat templates in `mlx_lm/chat_templates/` handle tool message formatting for
+the corresponding models.
+
 ## mlx-vlm
 
 mlx-vlm is a third-party library that extends mlx-lm patterns for
-vision-language models.
+vision-language models. It supports 48+ VLM architectures including audio
+(Qwen3-Omni-MoE).
 
 ### Key Differences from mlx-lm
 
 1. **Two-stage architecture**: Vision encoder + Language model
-2. **Image preprocessing**: Resizing, normalization, patch extraction
-3. **Multi-modal inputs**: Both text tokens and image embeddings
-4. **Cross-attention or projection**: Different VLMs connect vision to language differently
+2. **Processor-centric**: Depends on HuggingFace Transformers processors for
+   image/audio preprocessing
+3. **Multi-modal inputs**: Both text tokens and image/audio embeddings
+4. **Shared utilities**: Uses mlx-lm's `make_sampler`, `make_logits_processors`,
+   and `maybe_quantize_kv_cache` directly
 
 ### Trust Level
 

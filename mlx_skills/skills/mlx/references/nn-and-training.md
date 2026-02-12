@@ -214,7 +214,13 @@ module wrapper.
 | Layer | Description |
 |-------|-------------|
 | `nn.QuantizedLinear(in, out, bias=True, group_size=64, bits=4)` | Quantized linear; stores packed uint32 weights with per-group scales |
+| `nn.QQLinear(in, out, mode="nvfp4")` | Trainable quantized linear; quantizes both weights and inputs via `mx.qqmm`. Supports `"nvfp4"` and `"mxfp8"` modes. No bias support. |
 | `nn.QuantizedEmbedding(num, dims, group_size=64, bits=4)` | Quantized embedding |
+
+`nn.QQLinear` vs `nn.QuantizedLinear`: QQLinear weights are trainable -- they
+dequantize on `.train()` and quantize in eval mode. Use
+`nn.QQLinear.from_linear(layer, mode="nvfp4")` to convert. Prefer
+`QuantizedLinear` when weights do not need training.
 
 ### Other
 
@@ -263,6 +269,8 @@ All in `nn.init`:
 | `nn.init.glorot_uniform(dtype)` | Xavier/Glorot uniform |
 | `nn.init.he_normal(dtype)` | Kaiming/He normal |
 | `nn.init.he_uniform(dtype)` | Kaiming/He uniform |
+| `nn.init.sparse(sparsity, mean=0, std=1, dtype)` | Sparse matrix initialization (2D only) |
+| `nn.init.orthogonal(gain=1.0, dtype)` | Orthogonal via QR decomposition (2D only) |
 
 Initializers return callables. Apply them using `model.apply`:
 
@@ -292,6 +300,10 @@ All in `mlx.optimizers`:
 | `RMSprop(learning_rate=0.01, alpha=0.99, eps=1e-8)` | RMSprop |
 | `Lion(learning_rate=1e-4, betas=(0.9, 0.99), weight_decay=0)` | Lion (EvoLved Sign Momentum) |
 | `Adafactor(learning_rate=None, ...)` | Adafactor (memory-efficient) |
+| `Muon(learning_rate, momentum=0.95, weight_decay=0.01, nesterov=True, ns_steps=5)` | MomentUm Orthogonalized by Newton-schulz |
+
+Muon is sub-optimal for embedding layers, final fully connected layers, and
+0D/1D parameters. Pair with AdamW via `MultiOptimizer` for those parameter groups.
 
 ### Usage
 
@@ -467,3 +479,26 @@ def step(x, y):
     optimizer.update(model, grads)
     return loss
 ```
+
+### Distributed Layers
+
+For model parallelism, MLX provides sharded linear layers that handle
+distributed communication automatically:
+
+| Layer | Description |
+|-------|-------------|
+| `nn.AllToShardedLinear` | Input replicated, output split across devices |
+| `nn.ShardedToAllLinear` | Input split, output all-reduced across devices |
+| `nn.QuantizedAllToShardedLinear` | Quantized variant of AllToShardedLinear |
+| `nn.QuantizedShardedToAllLinear` | Quantized variant of ShardedToAllLinear |
+
+Factory function:
+
+```python
+group = mx.distributed.init()
+sharded_layer = nn.shard_linear(linear_layer, "all-to-sharded", group=group)
+```
+
+`nn.shard_linear` automatically selects the quantized variant when given a
+`QuantizedLinear` input. See mlx-lm's `shard()` method for the full sharding
+pattern applied to transformer models.

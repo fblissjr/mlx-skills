@@ -110,6 +110,8 @@ When writing or reviewing MLX code, check:
    weights loaded lazily then cast before evaluation?
 5. **Compilation**: Are compiled functions being recompiled unnecessarily?
    Check for changing shapes, constants, or captured arrays.
+6. **Quantization mode**: If using `nn.QQLinear`, verify `.train()` / eval mode
+   matches the use case (trainable weights vs. deployment).
 
 For **performance optimization**, load the `fast-mlx` skill which has detailed
 profiling and optimization guides.

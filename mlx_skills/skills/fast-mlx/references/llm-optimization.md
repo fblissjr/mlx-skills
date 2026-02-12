@@ -73,6 +73,22 @@ cache = load_prompt_cache("system_prompt.safetensors")
 generate_step(user_prompt, model, prompt_cache=cache)
 ```
 
+### MLA Cache Optimization
+
+Models using Multi-head Latent Attention (MLA), such as DeepSeek V3, store
+compressed latent vectors instead of full K/V per head. This dramatically
+reduces cache memory:
+
+- Standard: `cache_per_layer = 2 * batch * n_kv_heads * head_dim * seq_len * dtype_bytes`
+- MLA: `cache_per_layer = batch * (kv_lora_rank + qk_rope_head_dim) * 2 * dtype_bytes * seq_len`
+
+With typical values (`kv_lora_rank=512`, `qk_rope_head_dim=64` vs
+`n_heads * head_dim` often 8192+), MLA reduces cache by ~14x per layer.
+
+The cache uses `CacheList` pairs (latent cache + rope key cache) per layer.
+For MLA models, `QuantizedKVCache` quantizes the latent vectors, compounding
+memory savings.
+
 ## Async Generation Pipeline
 
 ### The Double-Buffer Pattern
@@ -218,6 +234,10 @@ for response in stream_generate(
 - Too few: verification overhead dominates
 - Too many: low acceptance rate wastes draft computation
 - Sweet spot is typically 2-4 for models in the same family
+- CLI: `--draft-model <path>` and `--num-draft-tokens <n>` (default 3)
+
+Draft and main model must share the same tokenizer. On rejection,
+`trim_prompt_cache` rewinds both caches to the last accepted token.
 
 ## Training Optimization
 
