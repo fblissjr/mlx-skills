@@ -9,6 +9,7 @@ from pathlib import Path
 
 SKILLS_DIR = Path(__file__).parent / "skills"
 MAX_BODY_WORDS = 5000
+MAX_DESCRIPTION_LENGTH = 1024
 
 # Patterns for cross-skill references:
 #   load the `X` skill
@@ -18,13 +19,16 @@ _CROSS_REF_PATTERNS = [
     re.compile(r"`([^`]+)` skill"),
 ]
 
+_LAST_UPDATED_PATTERN = re.compile(r"^last updated:\s*\d{4}-\d{2}-\d{2}", re.MULTILINE)
+
 
 def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """Parse YAML frontmatter delimited by ``---``.
 
     Returns a dict of parsed key-value pairs and the body text after
-    frontmatter.  Uses simple regex extraction for ``name`` and
-    ``description`` fields so we don't require a YAML library.
+    frontmatter.  Uses simple regex extraction for ``name``,
+    ``description``, and ``metadata`` fields so we don't require a YAML
+    library.
     """
     parts = text.split("---", 2)
     if len(parts) < 3:
@@ -51,6 +55,10 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
         if desc_match:
             fields["description"] = desc_match.group(1).strip()
 
+    # metadata block (just check presence, not contents)
+    if re.search(r"^metadata:\s*$", raw_yaml, re.MULTILINE):
+        fields["metadata"] = "present"
+
     return fields, body
 
 
@@ -74,16 +82,22 @@ def _find_cross_refs(text: str) -> list[str]:
     return unique
 
 
-def validate(skills_dir: Path | None = None) -> list[str]:
+def _has_last_updated(text: str) -> bool:
+    """Check whether *text* contains a ``last updated: YYYY-MM-DD`` line."""
+    return bool(_LAST_UPDATED_PATTERN.search(text))
+
+
+def validate(skills_dir: Path | None = None) -> tuple[list[str], list[str]]:
     """Validate all skills under *skills_dir*.
 
-    Returns a list of error strings.  An empty list means everything is
-    valid.
+    Returns a tuple of ``(errors, warnings)``.  An empty errors list
+    means all required checks passed.  Warnings are advisory.
     """
     if skills_dir is None:
         skills_dir = SKILLS_DIR
 
     errors: list[str] = []
+    warnings: list[str] = []
     validated_skills: list[str] = []
     total_refs_checked = 0
     total_files_checked = 0
@@ -94,7 +108,7 @@ def validate(skills_dir: Path | None = None) -> list[str]:
 
     if not skill_dirs:
         errors.append(f"No skill directories found under {skills_dir}")
-        return errors
+        return errors, warnings
 
     all_skill_names = {d.name for d in skill_dirs}
 
@@ -119,6 +133,20 @@ def validate(skills_dir: Path | None = None) -> list[str]:
                 f"[{skill_name}] SKILL.md frontmatter missing 'description' field"
             )
 
+        # -- Metadata check (warning) --
+        if "metadata" not in fields:
+            warnings.append(
+                f"[{skill_name}] SKILL.md frontmatter missing 'metadata' field"
+            )
+
+        # -- Description length --
+        desc = fields.get("description", "")
+        if len(desc) > MAX_DESCRIPTION_LENGTH:
+            errors.append(
+                f"[{skill_name}] SKILL.md description is {len(desc)} chars "
+                f"(limit {MAX_DESCRIPTION_LENGTH})"
+            )
+
         # -- Word count --
         wc = _word_count(body)
         if wc > MAX_BODY_WORDS:
@@ -126,15 +154,18 @@ def validate(skills_dir: Path | None = None) -> list[str]:
                 f"[{skill_name}] SKILL.md body is {wc} words (limit {MAX_BODY_WORDS})"
             )
 
-        # -- Verify reference files exist --
+        # -- Verify reference files exist and have dates --
         refs_dir = skill_dir / "references"
         if refs_dir.is_dir():
             for ref_file in sorted(refs_dir.iterdir()):
-                if ref_file.is_file():
+                if ref_file.is_file() and ref_file.suffix == ".md":
                     total_files_checked += 1
-                    # File exists on disk -- that's the check.
-                    # (We iterate what's there; nothing to verify beyond
-                    # existence, which iterdir already confirms.)
+                    ref_text = ref_file.read_text(encoding="utf-8")
+                    if not _has_last_updated(ref_text):
+                        rel = ref_file.relative_to(skills_dir)
+                        warnings.append(
+                            f"[{skill_name}] {rel} missing 'last updated' date"
+                        )
 
         # -- Cross-reference validation on all .md files --
         md_files = list(skill_dir.rglob("*.md"))
@@ -155,18 +186,26 @@ def validate(skills_dir: Path | None = None) -> list[str]:
         print(f"Validated {len(validated_skills)} skills: {', '.join(validated_skills)}")
         print(f"  Files checked: {total_files_checked}")
         print(f"  Cross-references checked: {total_refs_checked}")
+        if warnings:
+            print(f"  Warnings: {len(warnings)}")
+            for w in warnings:
+                print(f"    - {w}")
         print("All checks passed.")
 
-    return errors
+    return errors, warnings
 
 
 def main() -> None:
     """CLI entrypoint for skill validation."""
-    errors = validate()
+    errors, warnings = validate()
     if errors:
         print("Validation failed:\n")
         for err in errors:
             print(f"  - {err}")
+        if warnings:
+            print("\nWarnings:\n")
+            for w in warnings:
+                print(f"  - {w}")
         sys.exit(1)
     sys.exit(0)
 

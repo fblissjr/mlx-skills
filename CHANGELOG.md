@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.1
+
+### Added
+
+- `metadata` field (author, version) in all three SKILL.md frontmatter blocks
+- "Remember" summary sections at the end of each SKILL.md with key takeaways
+- `last updated: YYYY-MM-DD` date stamps on all 10 reference files
+- Validator checks: metadata field presence (warning), description length
+  limit (1024 chars, error), reference file date presence (warning)
+- Tests for new validation checks (metadata, description length, ref dates)
+- Structural tests for metadata, description length, and reference file dates
+  against actual skills
+
+### Changed
+
+- Rewritten SKILL.md descriptions using WHAT + WHEN + Capabilities formula;
+  removed cross-reference directives from description fields (those belong
+  in the SKILL.md body, not the routing description)
+- Improved fast-mlx description with more natural-language trigger phrases
+  ("slow inference", "make it faster", "benchmark", "reduce memory")
+- Converted backtick reference paths to markdown links in all SKILL.md files
+  (e.g., `references/file.md` to [references/file.md](references/file.md))
+- `validate()` now returns `(errors, warnings)` tuple instead of just errors;
+  warnings are advisory and do not cause validation failure
+
 ## 0.4.0
 
 ### Added

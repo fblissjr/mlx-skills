@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # General Compute Optimization Guide
 
 Performance optimization techniques for general MLX computations: matrix ops,

@@ -1,13 +1,16 @@
 ---
 name: mlx-lm
 description: >
-  Use when working with mlx-lm, Apple's official language model library for MLX.
-  Scan project imports for "import mlx_lm", "from mlx_lm import" to determine
-  applicability. Also triggers on "mlx-lm", "generate", "stream_generate",
-  "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
-  or any LLM inference/training on Apple silicon using MLX. Covers model
-  architecture, generation pipelines, caching, quantization, fine-tuning, and
-  server deployment. For core MLX concepts, load the mlx skill first.
+  Apple's official language model library for MLX. Use when working with
+  mlx-lm for LLM inference, generation, or fine-tuning on Apple silicon.
+  Triggers on "import mlx_lm", "from mlx_lm import", "mlx-lm", "generate",
+  "stream_generate", "KVCache", "LoRA fine-tuning", "model quantization",
+  "GGUF", "safetensors", or LLM training on Apple silicon. Covers model
+  architecture, generation pipelines, caching, quantization, fine-tuning,
+  and server deployment.
+metadata:
+  author: Fred Bliss
+  version: 0.4.0
 ---
 
 # mlx-lm
@@ -45,7 +48,7 @@ Every model follows: `ModelArgs(BaseModelArgs)` dataclass for config,
 use Multi-head Latent Attention (MLA) which compresses KV via low-rank
 projections, dramatically reducing cache size.
 
-For the full architecture patterns with code, see `references/patterns.md`.
+For the full architecture patterns with code, see [references/patterns.md](references/patterns.md).
 
 ## Generation
 
@@ -56,7 +59,7 @@ function stalls the pipeline. Speculative decoding is supported via a draft
 model that generates candidate tokens verified by the main model in one pass.
 
 For the complete pipeline pattern, batch generation, and sampling details,
-see `references/patterns.md`.
+see [references/patterns.md](references/patterns.md).
 
 ## Loading and Quantization
 
@@ -85,7 +88,7 @@ packed uint32 weights -- usage is transparent.
 | `BatchRotatingKVCache` | Rotating cache with batch + per-sequence padding |
 
 For cache implementation details and the factory pattern, see
-`references/patterns.md`.
+[references/patterns.md](references/patterns.md).
 
 ## Fine-Tuning
 
@@ -94,7 +97,7 @@ freeze base model, train only LoRA parameters, save adapters separately, and
 optionally fuse back for inference. Works with both `nn.Linear` and
 `nn.QuantizedLinear` (QLoRA).
 
-For the full LoRA pattern and training loop, see `references/patterns.md`.
+For the full LoRA pattern and training loop, see [references/patterns.md](references/patterns.md).
 
 ## Sampling
 
@@ -121,7 +124,17 @@ Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
 
 Load these on demand for deeper guidance:
 
-- `references/patterns.md` -- Idiomatic mlx-lm patterns: nn.Module structure,
-  attention, KV cache, generation pipeline, quantization, LoRA, RoPE, sharding
-- `references/architecture.md` -- mlx-lm directory structure, model loading flow,
-  generation flow, model registration, fine-tuning flow, server integration
+- [references/patterns.md](references/patterns.md) -- Idiomatic mlx-lm patterns:
+  nn.Module structure, attention, KV cache, generation pipeline, quantization,
+  LoRA, RoPE, sharding
+- [references/architecture.md](references/architecture.md) -- mlx-lm directory
+  structure, model loading flow, generation flow, model registration, fine-tuning
+  flow, server integration
+
+## Remember
+
+1. **Load the `mlx` skill first** -- mlx-lm builds on core MLX concepts
+2. **Follow the ModelArgs pattern** -- every model uses `ModelArgs(BaseModelArgs)` + standard interface
+3. **Async pipeline is fragile** -- any sync evaluation inside the step function stalls generation
+4. **Quantization is transparent** -- `nn.QuantizedLinear` is a drop-in for `nn.Linear`
+5. **KV cache choice matters** -- match cache type to the attention pattern

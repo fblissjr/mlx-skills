@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # MLX Anti-Patterns
 
 Common mistakes when writing MLX code, typically caused by NumPy/PyTorch

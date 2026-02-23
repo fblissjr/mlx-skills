@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # Idiomatic MLX Patterns
 
 Patterns extracted from mlx-lm, the gold-standard MLX codebase. Use these as

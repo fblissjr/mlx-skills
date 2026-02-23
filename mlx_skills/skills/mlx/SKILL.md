@@ -1,14 +1,16 @@
 ---
 name: mlx
 description: >
-  Use when writing, debugging, reviewing, optimizing, or analyzing MLX code.
-  Scan project imports for "import mlx", "from mlx", "mx.array", "mx.compile",
-  "mx.eval" to determine applicability. Also triggers on "MLX", "Apple silicon
-  ML", "nn.Module", "nn.Linear", "mlx.optimizers", "training loop", or any
-  project using the mlx framework. Covers core concepts, nn module system,
-  layers, optimizers, training patterns, and debugging. If the project also
-  uses mlx-lm, load the mlx-lm skill. For performance optimization, load the
-  fast-mlx skill.
+  Core MLX framework knowledge for Apple silicon ML development. Use when
+  writing, debugging, reviewing, or analyzing MLX code. Triggers on "import
+  mlx", "from mlx", "mx.array", "mx.compile", "mx.eval", "nn.Module",
+  "nn.Linear", "mlx.optimizers", "training loop", "Apple silicon ML", or any
+  project using the mlx framework. Covers lazy evaluation, unified memory,
+  compilation, nn.Module system, layers, optimizers, training patterns,
+  and debugging.
+metadata:
+  author: Fred Bliss
+  version: 0.4.0
 ---
 
 # MLX
@@ -28,7 +30,7 @@ explicitly evaluate. Evaluate via `mx.eval(...)` or implicitly via `.item()`,
 after one training step, one token, or one denoising step.
 
 For details on evaluation strategy, async evaluation, and the pipelining
-pattern, see `references/fundamentals.md`.
+pattern, see [references/fundamentals.md](references/fundamentals.md).
 
 ### Unified Memory
 
@@ -41,7 +43,7 @@ Memory pressure is the main constraint.
 `mx.compile` traces and fuses operations for faster execution. Be aware:
 shape changes and constant input changes cause recompilation; closures over
 `mx.array` values include the closed-over computation in the graph. For
-details and examples, see `references/fundamentals.md`.
+details and examples, see [references/fundamentals.md](references/fundamentals.md).
 
 ### Function Transformations
 
@@ -60,7 +62,7 @@ These compose: `mx.compile(mx.grad(fn))` works.
 
 Python scalars are weakly typed, `mx.array` scalars are strongly typed.
 Always use Python scalars for constants in half precision. For the full
-promotion rules, see `references/fundamentals.md`.
+promotion rules, see [references/fundamentals.md](references/fundamentals.md).
 
 ## Ecosystem
 
@@ -120,13 +122,14 @@ profiling and optimization guides.
 
 Load these on demand for deeper guidance:
 
-- `references/fundamentals.md` -- Lazy evaluation, unified memory, streams,
-  compile, transformations, type system (detailed)
-- `references/nn-and-training.md` -- nn.Module system, all layers, losses,
-  optimizers, schedulers, training loop patterns
-- `references/anti-patterns.md` -- Common mistakes from NumPy/PyTorch habits
-- `references/debugging.md` -- Shape debugging, evaluation issues, memory
-  profiling, common errors
+- [references/fundamentals.md](references/fundamentals.md) -- Lazy evaluation,
+  unified memory, streams, compile, transformations, type system (detailed)
+- [references/nn-and-training.md](references/nn-and-training.md) -- nn.Module
+  system, all layers, losses, optimizers, schedulers, training loop patterns
+- [references/anti-patterns.md](references/anti-patterns.md) -- Common mistakes
+  from NumPy/PyTorch habits
+- [references/debugging.md](references/debugging.md) -- Shape debugging,
+  evaluation issues, memory profiling, common errors
 
 ## Related Skills
 
@@ -134,3 +137,11 @@ Load these on demand for deeper guidance:
   quantization, LoRA fine-tuning, server
 - **`fast-mlx`** -- Performance optimization: profiling, compilation tuning,
   memory reduction, async pipeline optimization
+
+## Remember
+
+1. **Lazy evaluation** -- nothing executes until explicitly evaluated
+2. **Unified memory** -- no device transfers, memory pressure is the constraint
+3. **Use `mx.fast` ops** -- always prefer over manual implementations
+4. **Python scalars for constants** -- avoid type promotion surprises in half precision
+5. **Evaluate at iteration boundaries** -- one training step, one token, one denoising step

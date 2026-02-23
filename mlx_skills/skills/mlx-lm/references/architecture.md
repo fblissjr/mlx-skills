@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # mlx-lm Architecture
 
 Architecture and integration patterns for mlx-lm, Apple's official language

@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # nn Module and Training
 
 Comprehensive reference for MLX's neural network module system, layers, losses,

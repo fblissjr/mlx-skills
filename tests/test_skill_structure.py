@@ -12,10 +12,12 @@ import pytest
 
 from mlx_skills.validate import (
     _find_cross_refs,
+    _has_last_updated,
     _parse_frontmatter,
     _word_count,
     validate,
     MAX_BODY_WORDS,
+    MAX_DESCRIPTION_LENGTH,
     SKILLS_DIR,
 )
 
@@ -106,11 +108,45 @@ class TestCrossReferences:
                 )
 
 
+class TestMetadata:
+    def test_has_metadata(self, skill_dir: Path):
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        fields, _ = _parse_frontmatter(text)
+        assert "metadata" in fields, (
+            f"{skill_dir.name}/SKILL.md missing 'metadata' field"
+        )
+
+
+class TestDescriptionLength:
+    def test_description_under_limit(self, skill_dir: Path):
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        fields, _ = _parse_frontmatter(text)
+        desc = fields.get("description", "")
+        assert len(desc) <= MAX_DESCRIPTION_LENGTH, (
+            f"{skill_dir.name}/SKILL.md description is {len(desc)} chars "
+            f"(limit {MAX_DESCRIPTION_LENGTH})"
+        )
+
+
+class TestReferenceFileDates:
+    def test_all_refs_have_date(self, skill_dir: Path):
+        refs_dir = skill_dir / "references"
+        if not refs_dir.is_dir():
+            pytest.skip(f"{skill_dir.name} has no references/ directory")
+        for ref_file in sorted(refs_dir.iterdir()):
+            if ref_file.suffix == ".md":
+                text = ref_file.read_text(encoding="utf-8")
+                assert _has_last_updated(text), (
+                    f"{skill_dir.name}/references/{ref_file.name} "
+                    f"missing 'last updated' date"
+                )
+
+
 class TestFullValidation:
     """Run the full validate() function against the real skills."""
 
     def test_all_skills_pass(self):
-        errors = validate(REPO_SKILLS)
+        errors, warnings = validate(REPO_SKILLS)
         assert errors == [], (
             "Validation errors:\n" + "\n".join(f"  - {e}" for e in errors)
         )

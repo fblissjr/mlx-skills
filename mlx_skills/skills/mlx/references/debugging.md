@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # Debugging MLX Code
 
 Practical guide for diagnosing common issues in MLX programs.

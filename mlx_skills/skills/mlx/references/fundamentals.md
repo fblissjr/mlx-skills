@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # MLX Fundamentals
 
 Deep reference for MLX core concepts. Read SKILL.md first for the overview.

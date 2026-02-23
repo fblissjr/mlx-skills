@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # Making MLX Go Fast
 
 ## Table of Contents

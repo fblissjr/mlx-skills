@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # DiT / Diffusion Optimization Guide
 
 Performance optimization techniques for diffusion models / DiT models on MLX.

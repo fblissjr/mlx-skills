@@ -1,3 +1,5 @@
+last updated: 2026-02-23
+
 # LLM Optimization Guide
 
 Performance optimization techniques specific to language model inference and
