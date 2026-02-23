@@ -22,6 +22,10 @@
 
 ### Changed
 
+- Updated `nn.QuantizedLinear` signature: new `mode` parameter (`"affine"`,
+  `"mxfp4"`, `"nvfp4"`, `"mxfp8"`); `group_size`/`bits` now default based on mode
+- Updated `nn.QuantizedEmbedding` with same `mode` parameter support
+- Updated mlx-lm SDPA wrapper with `sinks` parameter for attention sinks
 - Updated mlx-lm model architecture count from 40+ to 50+
 - Updated mlx-vlm section: 48+ VLM architectures, processor-centric design,
   shared mlx-lm utilities (make_sampler, make_logits_processors)

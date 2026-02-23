@@ -231,9 +231,10 @@ mlx-lm routes through a wrapper that handles quantized vs regular caches:
 ```python
 # Routes to mx.fast.scaled_dot_product_attention for standard caches,
 # or mx.quantized_matmul for quantized KV caches (QuantizedKVCache).
-def scaled_dot_product_attention(queries, keys, values, cache, scale, mask):
+def scaled_dot_product_attention(queries, keys, values, cache, scale, mask,
+                                 sinks=None):
     if hasattr(cache, "bits"):
-        # Quantized KV cache -- use mx.quantized_matmul
+        # Quantized KV cache -- use mx.quantized_matmul (no sinks support)
         return quantized_scaled_dot_product_attention(...)
     else:
         # Standard -- use the fast op
@@ -241,6 +242,9 @@ def scaled_dot_product_attention(queries, keys, values, cache, scale, mask):
             queries, keys, values, scale=scale, mask=mask
         )
 ```
+
+The optional `sinks` parameter supports attention sinks for models using
+`RotatingKVCache` with `keep` tokens preserved at the start.
 
 ### Attention Mask Creation
 

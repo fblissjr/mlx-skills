@@ -213,9 +213,9 @@ module wrapper.
 
 | Layer | Description |
 |-------|-------------|
-| `nn.QuantizedLinear(in, out, bias=True, group_size=64, bits=4)` | Quantized linear; stores packed uint32 weights with per-group scales |
+| `nn.QuantizedLinear(in, out, bias=True, group_size=None, bits=None, mode="affine")` | Quantized linear; stores packed uint32 weights with per-group scales. Modes: `"affine"` (default, g=64/b=4), `"mxfp4"` (g=32/b=4), `"nvfp4"` (g=16/b=4), `"mxfp8"` (g=32/b=8). |
 | `nn.QQLinear(in, out, mode="nvfp4")` | Trainable quantized linear; quantizes both weights and inputs via `mx.qqmm`. Supports `"nvfp4"` and `"mxfp8"` modes. No bias support. |
-| `nn.QuantizedEmbedding(num, dims, group_size=64, bits=4)` | Quantized embedding |
+| `nn.QuantizedEmbedding(num, dims, group_size=None, bits=None, mode="affine")` | Quantized embedding; same mode options as QuantizedLinear |
 
 `nn.QQLinear` vs `nn.QuantizedLinear`: QQLinear weights are trainable -- they
 dequantize on `.train()` and quantize in eval mode. Use

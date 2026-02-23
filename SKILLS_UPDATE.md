@@ -4,7 +4,7 @@ Changes since: 30days
 
 ## mlx
 
-**80 commits**, **872 files changed** (116 Python)
+**54 commits**, **872 files changed** (116 Python)
 
 ### Watched File Changes
 
@@ -28,28 +28,24 @@ Changes since: 30days
   - `docs/src/usage/compile.rst`
   - `docs/src/usage/unified_memory.rst`
 
-### Potential Breaking Changes
-
-  - [a8197795f5d6] replace MLX_IBV_COORDINATOR with MLX_JACCL_COORDINATOR (#2986)
-
 ### Recent Commits
 
+  - `d4c81062ad0d` [Metal] Fix 32-bit integer overflow in conv3d unfold kernel (#3143) (Kellen Sun, 2026-02-19)
+  - `f2f2d1645156` Export: preserve Dtype state values in export callback arguments (#3145) (Alex Skryl, 2026-02-19)
+  - `daf18e76ca14` Fix fence synchronization accross command buffers (#3144) (Awni Hannun, 2026-02-18)
+  - `06305022abac` Tensor scale nvfp4 (#3022) (Anastasiia Filippova, 2026-02-18)
+  - `360639c2dfc1` Add the hamming window function (#3135) (willem adnet, 2026-02-17)
+  - `3bbe87e6dcc7` Add hanning window function (#3124) (willem adnet, 2026-02-16)
+  - `e226af720e15` Propagate quantization mode in quantized layers (#3133) (vskiwi, 2026-02-16)
+  - `43f4a7482652` Manage stream placement in import function (#3127) (Awni Hannun, 2026-02-15)
+  - `c184262d29a8` Fix donation in sdpa vector (#3121) (Angelos Katharopoulos, 2026-02-12)
   - `72e94c81e168` [CUDA] Attention sinks in cuDNN SDPA (#3118) (Cheng, 2026-02-11)
   - `4c86c1e55adc` Fix precision in Metal fused attention (#3119) (Awni Hannun, 2026-02-10)
   - `be52cf660b5b` register pressure (#3116) (Anastasiia Filippova, 2026-02-10)
   - `54bb3eea424b` [CUDA] Use cuDNN SDPA for decoding when using fixed-size KV cache (#3113) (Cheng, 2026-02-10)
   - `5e018de4e5f1` Quantize module to QQLinear (#3106) (Anastasiia Filippova, 2026-02-09)
   - `9cd4b9be91d3` [CUDA] Set current device before allocating memory (#3110) (Cheng, 2026-02-08)
-  - `566bc16b7c37` Cleanup test_fast_sdpa.py (#3112) (Cheng, 2026-02-08)
-  - `8fe1d09207c6` Fix residency set with user provided buffer (#3108) (Awni Hannun, 2026-02-06)
-  - `ef3fbc60a3ad` is_available() should check the device index too (#3107) (Ronan Collobert, 2026-02-06)
-  - `69fd3fa9b1e2` Patch bump (#3102) (Angelos Katharopoulos, 2026-02-06)
-  - `185b06d9efc1` Patch for multi device CUDA (#3100) (Awni Hannun, 2026-02-05)
-  - `90e38f7b931e` Fix qmv_impl for small N (#3096) (Manuel Candales, 2026-02-05)
-  - `ceea57149007` JACCL update (#3094) (Angelos Katharopoulos, 2026-02-05)
-  - `99ca62c4d337` Fix 2pass sdpa on < M2 (#3099) (Awni Hannun, 2026-02-05)
-  - `206cf07e5b6b` Fix non simd f16 build (#3097) (Awni Hannun, 2026-02-05)
-  - ... and 65 more
+  - ... and 39 more
 
 ### Other Python Files Changed
 
@@ -72,7 +68,7 @@ Changes since: 30days
 
 ## mlx-lm
 
-**55 commits**, **207 files changed** (187 Python)
+**46 commits**, **209 files changed** (189 Python)
 
 ### Watched File Changes
 
@@ -87,22 +83,22 @@ Changes since: 30days
 
 ### Recent Commits
 
+  - `321e764e0ab6` Make the cache limits more friendly (#910) (Angelos Katharopoulos, 2026-02-19)
+  - `83ff9c96d571` Improve the cache size limits (#906) (Angelos Katharopoulos, 2026-02-19)
+  - `9c113f701968` Allow reading LFM2 models nested rope params (#908) (Yuri Khrustalev, 2026-02-18)
+  - `7d6c5e4af7aa` Add tie_word_embeddings modulars in mistral and qwen3 moe (#889) (Gökdeniz Gülmez, 2026-02-18)
+  - `ad067ea627c7` bump for next version (#904) (Awni Hannun, 2026-02-17)
+  - `d7b91e80f073` Fix sharded rms norm in MiniMax M2.5 (#898) (Angelos Katharopoulos, 2026-02-16)
+  - `1fd521c3c79e` fix qwen3.5 casting to fp32 (#902) (Awni Hannun, 2026-02-16)
+  - `572ada278c39` server: add usage.prompt_tokens_details.cached_tokens to json response (#849) (Ryan Goulden, 2026-02-16)
+  - `fb47f8fb9944` Add the trust remote code option to mlx_lm perplexity  (#896) (Ivan Fioravanti, 2026-02-16)
+  - `7a720882a7d4` Add JoyAI LLM Flash (#894) (Tarjei Mandt, 2026-02-16)
+  - `014ebc6a4614` Fix mixed quant predicates for MLA models (#892) (spicyneuron, 2026-02-15)
+  - `c6d9d3c9f58b` Share model (#871) (Angelos Katharopoulos, 2026-02-13)
+  - `bcf630614ffb` Fix save/load of CacheList (#886) (Angelos Katharopoulos, 2026-02-12)
+  - `1974376d704a` Add GLM5 (#867) (Gökdeniz Gülmez, 2026-02-12)
   - `7e67225e1d7b` Faster DSV32 generation (#885) (Tarjei Mandt, 2026-02-13)
-  - `0fd312649627` [MODEL] support qwen3.5 series w/o vision (#869) (JJJYmmm, 2026-02-12)
-  - `ca0d1c9630d9` LongCat MLA (#868) (Tarjei Mandt, 2026-02-13)
-  - `82edd51a1e60` Devstral tool parser (#874) (Awni Hannun, 2026-02-11)
-  - `aca4c149a189` Make validation set optional in training process (#857) (Gökdeniz Gülmez, 2026-02-11)
-  - `8f1c56ec8303` Fix DeepSeek V3.2 indexer and weight loading (#866) (Tarjei Mandt, 2026-02-11)
-  - `84ae19e675fb` Pythonic tool calling for LFM2 models (#864) (viktike, 2026-02-10)
-  - `645a326a2e35` Bump version for next release (#865) (Awni Hannun, 2026-02-09)
-  - `fd6959dca7a7` Fix Kimi Linear (#853) (Tarjei Mandt, 2026-02-07)
-  - `f18526f8d66f` DSV3 MLA (#839) (Awni Hannun, 2026-02-04)
-  - `25a4c8369e3c` Fix sliding window mask during generation (#843) (Tarjei Mandt, 2026-02-05)
-  - `e08ec15b7201` Fix batch mamba (#842) (Awni Hannun, 2026-02-03)
-  - `b77ec6b951e8` Fix Step 3.5 Flash model conversion (#840) (Tarjei Mandt, 2026-02-04)
-  - `ab050d1fac2e` Deepseek V3.2 implementation fixes (#838) (Sebastian Jug, 2026-02-03)
-  - `942b3ed4b61b` fix: handle GLM 4.7 tool call fallbacks (#792) (Josh Lehman, 2026-02-03)
-  - ... and 40 more
+  - ... and 31 more
 
 ### Model Files Changed
 
@@ -126,7 +122,7 @@ Changes since: 30days
   - `mlx_lm/models/deepseek_v2.py`
   - `mlx_lm/models/deepseek_v3.py`
   - `mlx_lm/models/deepseek_v32.py`
-  - ... and 96 more
+  - ... and 97 more
 
 ### Tuner Files Changed
 
@@ -156,11 +152,11 @@ Changes since: 30days
   - `mlx_lm/examples/batch_generate_response.py`
   - `mlx_lm/examples/chat.py`
   - `mlx_lm/examples/generate_response.py`
-  - ... and 48 more
+  - ... and 49 more
 
 ## mlx-vlm
 
-**31 commits**, **359 files changed** (278 Python)
+**49 commits**, **367 files changed** (285 Python)
 
 ### Watched File Changes
 
@@ -168,22 +164,22 @@ Changes since: 30days
 
 ### Recent Commits
 
-  - `dd7cef17b029` Honor quantization_config (#692) (Pedro Cuenca, 2026-02-11)
-  - `4fca3b488440` video_generate.py: handle capitalized extensions in is_video_file (#719) (Nixuge, 2026-02-11)
-  - `2ee061823281` Fix KeyError: image_token_index for Qwen2-VL models (#720) (Jesse Rodriguez, 2026-02-11)
-  - `6ce2ee35fd3f` Use mlx-lm provided logits processors and samplers (#724) (Sunny He, 2026-02-11)
-  - `eadc25f6a682` docs: clarify that some models need [torch] extra for torchvision (#716) (Harikrishna KP, 2026-02-11)
-  - `ebe2bc47c4e2` qwen3_omni_moe: Fix destructuring error after get_input_embeddings's result changed from a tuple to an object (#723) (Nixuge, 2026-02-11)
-  - `1028599f8f8d` [MODEL] support qwen3.5 series (#722) (JJJYmmm, 2026-02-09)
-  - `21f9b458765e` Refactor Attention class to calculate n_kv_heads dynamically based on head_dim, improving clarity and maintainability of the code. (#713) (Prince Canuma, 2026-02-04)
-  - `f0b4f32327ee` [PaddleOCR] Fix hardcoded processor config (#712) (Prince Canuma, 2026-02-04)
-  - `a2542774e545` Fix wired limit and add prefill step size argument (#699) (Prince Canuma, 2026-02-04)
-  - `61b411d462ce` fix: enhance model import error messages. (#710) (Anton Vice, 2026-02-03)
-  - `d54b53c579a8` Add GLM-OCR (#706) (Prince Canuma, 2026-02-03)
-  - `79fddfc58a0c` fix to attention and mask for qwen2_vl (#704) (hturbe, 2026-02-02)
-  - `aaab6e53014b` Refactor input embedding handling in batch gen (#694) (Prince Canuma, 2026-01-29)
-  - `48fc189b3c3e` TFMS v5 RC3 + Fix processor registry (#693) (Prince Canuma, 2026-01-28)
-  - ... and 16 more
+  - `72d53ecc52bb` Fix batch inference to use InputEmbeddingsFeatures (#760) (Prince Canuma, 2026-02-23)
+  - `8d16d655955c` Initialize qwen3_5_moe.LanguageModel with _position_ids (#753) (will-lms, 2026-02-19)
+  - `3dd075d43a5c` Adding full weight finetuning (#499) (Gökdeniz Gülmez, 2026-02-19)
+  - `a947fc76ebba` fix gemma3n short context (#751) (Prince Canuma, 2026-02-17)
+  - `739f4ab7d4b6` Add dots-ocr (#749) (Prince Canuma, 2026-02-17)
+  - `05296a595ad5` [Phiv3] Fix dtype cast (#748) (Prince Canuma, 2026-02-16)
+  - `ac2f06803b75` bump mlx-lm (Prince Canuma, 2026-02-16)
+  - `dafc569eb0ca` Update package versions in uv.lock: bump mlx-lm to 0.30.7, transformers to 5.2.0, and adjust related sdist and wheel URLs. (Prince Canuma, 2026-02-16)
+  - `90e6c9d5731b` [Ministral3] Fix multi-image gen (Prince Canuma, 2026-02-16)
+  - `0e769cf40e53` fix qwen2 (Prince Canuma, 2026-02-16)
+  - `529d5698824e` fix qwen2.5 vision leak (Prince Canuma, 2026-02-16)
+  - `3c7588329a13` format (Prince Canuma, 2026-02-16)
+  - `97f13ca5710c` Add dtype fallback from text_config in convert.py; introduce quant_predicate and cast_predicate properties in language.py and qwen3_5.py (Prince Canuma, 2026-02-16)
+  - `eb81dc0176a9` format (Prince Canuma, 2026-02-16)
+  - `0b5791c38891` normalize inputs (Prince Canuma, 2026-02-16)
+  - ... and 34 more
 
 ### Model Files Changed
 
@@ -207,7 +203,7 @@ Changes since: 30days
   - `mlx_vlm/models/deepseekocr/conversation.py`
   - `mlx_vlm/models/deepseekocr/deepseekocr.py`
   - `mlx_vlm/models/deepseekocr/language.py`
-  - ... and 211 more
+  - ... and 217 more
 
 ### Other Python Files Changed
 
@@ -226,7 +222,7 @@ Changes since: 30days
   - `mlx_vlm/chat.py`
   - `mlx_vlm/chat_ui.py`
   - `mlx_vlm/convert.py`
-  - ... and 32 more
+  - ... and 33 more
 
 ---
 
