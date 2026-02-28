@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.3
+
+### Added
+
+- `mlx/references/porting-guide.md`: comprehensive PyTorch-to-MLX migration
+  guide with step-by-step walkthrough, side-by-side code examples, API mapping
+  tables (40+ operations), layer equivalents, training loop conversion, and a
+  porting completion checklist
+- `/update-skills` project-level skill: maintainer workflow that runs the
+  upstream scanner, analyzes diffs, smart-routes changes to the correct
+  reference files, updates them, and validates
+- `--diff-lines N` CLI arg for `scripts/check_updates.py`: truncate diffs
+  to N lines per file (0 = unlimited)
+- "Which Skill Do I Need?" quick-reference table in CLAUDE.md for skill routing
+
+### Changed
+
+- `mlx` skill: added porting/migration triggers ("port to mlx", "pytorch to mlx",
+  "convert to mlx", "rewrite in mlx", "migrate to mlx") to description; added
+  "Porting from PyTorch / NumPy" section to SKILL.md body pointing to new guide
+- `mlx-lm` skill: added "When to Use This Skill" routing section; clarified
+  description to distinguish "run existing HuggingFace models" (mlx-lm) from
+  "write custom models / port from PyTorch" (mlx); added triggers "run llama",
+  "run a model on my mac", "local LLM", "huggingface model"
+- `fast-mlx` skill: added "When to Use This Skill" routing section; clarified
+  description with "NOT for writing new MLX code or porting"; added triggers
+  "performance tuning", "why is my mlx code slow"
+- CLAUDE.md skills section rewritten with "Use for:" summaries and updated
+  trigger lists
+- `get_watched_file_diffs()` default is now unlimited (no truncation) since
+  `--diff` is already opt-in; use `--diff-lines N` for explicit truncation
+- `analyze_watched_files()` and `generate_report()` now accept `max_lines`
+  parameter, passed through from CLI
+
+## 0.4.2
+
+### Added
+
+- `--diff` flag for `scripts/check_updates.py`: includes unified diffs for
+  watched files directly in the report, making it self-contained and actionable
+- `get_watched_file_diffs()` function with configurable line-limit truncation
+  (default 200 lines per file)
+- `build_parser()` extracted from `main()` for testability
+- `tests/test_check_updates.py` with 9 tests covering diff output, truncation,
+  integration with `analyze_watched_files` and `generate_report`, and CLI parsing
+
 ## 0.4.1
 
 ### Added

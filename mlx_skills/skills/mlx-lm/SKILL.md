@@ -1,13 +1,14 @@
 ---
 name: mlx-lm
 description: >
-  Apple's official language model library for MLX. Use when working with
-  mlx-lm for LLM inference, generation, or fine-tuning on Apple silicon.
-  Triggers on "import mlx_lm", "from mlx_lm import", "mlx-lm", "generate",
-  "stream_generate", "KVCache", "LoRA fine-tuning", "model quantization",
-  "GGUF", "safetensors", or LLM training on Apple silicon. Covers model
-  architecture, generation pipelines, caching, quantization, fine-tuning,
-  and server deployment.
+  Apple's official language model library for MLX. Use when running, serving,
+  fine-tuning, or quantizing HuggingFace transformer models on Apple silicon.
+  NOT for writing custom MLX models from scratch or porting PyTorch code (use
+  the mlx skill for that). Triggers on "import mlx_lm", "from mlx_lm import",
+  "mlx-lm", "run llama", "run a model on my mac", "generate", "stream_generate",
+  "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
+  "huggingface model", or "local LLM". Covers model loading, generation
+  pipelines, caching, quantization, fine-tuning, and server deployment.
 metadata:
   author: Fred Bliss
   version: 0.4.0
@@ -17,6 +18,20 @@ metadata:
 
 Apple's official language model library for MLX. Provides inference, generation,
 quantization, and fine-tuning for 50+ transformer architectures on Apple silicon.
+
+## When to Use This Skill
+
+Use `/mlx-lm` when you want to:
+- Run an existing HuggingFace model locally on your Mac
+- Fine-tune a model with LoRA/DoRA
+- Quantize a model for deployment
+- Build an API server for local inference
+- Understand mlx-lm's model architecture patterns
+
+Use `/mlx` instead when you want to:
+- Port a PyTorch model to MLX from scratch
+- Write custom MLX layers or training loops
+- Learn MLX fundamentals (lazy evaluation, compilation, memory)
 
 ## Prerequisites
 

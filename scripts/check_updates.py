@@ -89,6 +89,36 @@ DEPRECATION_KEYWORDS = [
 ]
 
 
+MAX_DIFF_LINES = 200
+
+
+def get_watched_file_diffs(
+    repo_path: Path, since: str, file_path: str, max_lines: int = 0
+) -> str:
+    """Get unified diff output for a watched file within the time range.
+
+    Returns the patch text. When max_lines > 0, truncates to that many lines.
+    When max_lines is 0 (default), returns full output.
+    Returns empty string if no diffs are found.
+    """
+    output = run_git(
+        repo_path, "log", f"--since={since}", "-p", "--", file_path
+    )
+    if not output:
+        return ""
+
+    if max_lines <= 0:
+        return output
+
+    lines = output.splitlines()
+    if len(lines) <= max_lines:
+        return output
+
+    truncated = "\n".join(lines[:max_lines])
+    truncated += f"\n... truncated ({len(lines) - max_lines} lines omitted)"
+    return truncated
+
+
 def clone_repo(url: str, dest: Path, since: str) -> bool:
     """Shallow bare clone scoped to the time window. Returns True on success."""
     result = subprocess.run(
@@ -207,7 +237,12 @@ def check_deprecations(commits: list[dict]) -> list[str]:
 
 
 def analyze_watched_files(
-    repo_path: Path, repo_name: str, changed_files: list[str]
+    repo_path: Path,
+    repo_name: str,
+    changed_files: list[str],
+    include_diffs: bool = False,
+    since: str = "",
+    max_lines: int = 0,
 ) -> list[str]:
     """Check if any watched files were modified."""
     watched = WATCHED_FILES.get(repo_name, [])
@@ -226,11 +261,24 @@ def analyze_watched_files(
                 hits.append(f"  - `{wf}`{api_str}")
             else:
                 hits.append(f"  - `{wf}`")
+
+            if include_diffs and since:
+                diff = get_watched_file_diffs(repo_path, since, wf, max_lines=max_lines)
+                if diff:
+                    hits.append("")
+                    hits.append("```diff")
+                    hits.append(diff)
+                    hits.append("```")
+                    hits.append("")
     return hits
 
 
 def generate_report(
-    repos_dir: Path, since: str, repos: Optional[list[str]] = None
+    repos_dir: Path,
+    since: str,
+    repos: Optional[list[str]] = None,
+    include_diffs: bool = False,
+    max_lines: int = 0,
 ) -> str:
     """Generate the full update report."""
     lines = [
@@ -273,7 +321,11 @@ def generate_report(
         lines.append("")
 
         # Watched file changes
-        watched_hits = analyze_watched_files(repo_path, repo_name, changed_files)
+        watched_hits = analyze_watched_files(
+            repo_path, repo_name, changed_files,
+            include_diffs=include_diffs, since=since,
+            max_lines=max_lines,
+        )
         if watched_hits:
             lines.append("### Watched File Changes")
             lines.append("")
@@ -353,7 +405,8 @@ def generate_report(
     return "\n".join(lines)
 
 
-def main():
+def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="Scan upstream MLX repos for recent changes affecting skills."
     )
@@ -382,6 +435,23 @@ def main():
         type=Path,
         help="Write report to file instead of stdout",
     )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        default=False,
+        help="Include unified diffs for watched files in the report",
+    )
+    parser.add_argument(
+        "--diff-lines",
+        type=int,
+        default=0,
+        help="Truncate diffs to N lines per file (0 = unlimited, default: 0)",
+    )
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
 
     if args.repos_dir:
@@ -390,7 +460,7 @@ def main():
         if not repos_dir.is_dir():
             print(f"Error: directory not found at {repos_dir}", file=sys.stderr)
             sys.exit(1)
-        report = generate_report(repos_dir, args.since, args.repos)
+        report = generate_report(repos_dir, args.since, args.repos, include_diffs=args.diff, max_lines=args.diff_lines)
     else:
         # Remote mode: shallow-clone from GitHub to a temp directory
         targets = DEFAULT_REPOS
@@ -407,7 +477,7 @@ def main():
                 else:
                     print("skipped (no recent commits or clone failed)", file=sys.stderr)
             print("", file=sys.stderr)
-            report = generate_report(tmp_dir, args.since, args.repos)
+            report = generate_report(tmp_dir, args.since, args.repos, include_diffs=args.diff, max_lines=args.diff_lines)
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 

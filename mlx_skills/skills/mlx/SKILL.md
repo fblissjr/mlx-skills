@@ -2,12 +2,13 @@
 name: mlx
 description: >
   Core MLX framework knowledge for Apple silicon ML development. Use when
-  writing, debugging, reviewing, or analyzing MLX code. Triggers on "import
-  mlx", "from mlx", "mx.array", "mx.compile", "mx.eval", "nn.Module",
-  "nn.Linear", "mlx.optimizers", "training loop", "Apple silicon ML", or any
-  project using the mlx framework. Covers lazy evaluation, unified memory,
-  compilation, nn.Module system, layers, optimizers, training patterns,
-  and debugging.
+  writing, debugging, reviewing, porting, or converting code to MLX. Triggers
+  on "import mlx", "from mlx", "mx.array", "mx.compile", "mx.eval",
+  "nn.Module", "nn.Linear", "mlx.optimizers", "training loop", "Apple silicon
+  ML", "port to mlx", "convert to mlx", "pytorch to mlx", "rewrite in mlx",
+  "migrate to mlx", or any project using the mlx framework. Covers lazy
+  evaluation, unified memory, compilation, nn.Module system, layers,
+  optimizers, training patterns, debugging, and PyTorch/NumPy migration.
 metadata:
   author: Fred Bliss
   version: 0.4.0
@@ -97,6 +98,23 @@ Always prefer `mx.fast` ops over manual implementations.
 | Indexing | Full fancy indexing | Limited; prefer `mx.take_along_axis` |
 | Normalization | Manual upcast needed | `mx.fast.rms_norm`, `mx.fast.layer_norm` accumulate in higher precision |
 
+## Porting from PyTorch / NumPy
+
+MLX looks like PyTorch but has fundamental differences. The short version:
+
+1. **Remove all device management** -- no `.cuda()`, `.to(device)`, `.cpu()`
+2. **Replace `.backward()` with functional gradients** -- `nn.value_and_grad(model, loss_fn)`
+3. **Rename `forward()` to `__call__()`** -- MLX calls `__call__` directly
+4. **Add explicit evaluation** -- `mx.eval()` at iteration boundaries
+5. **Use Python scalars for constants** -- `x * 2.0` not `x * mx.array(2.0)`
+6. **Replace manual norms/attention/RoPE** with `mx.fast` ops
+
+For the complete walkthrough with side-by-side code, API mapping tables, and a
+porting checklist, see [references/porting-guide.md](references/porting-guide.md).
+
+For common PyTorch/NumPy habits that silently break in MLX, see
+[references/anti-patterns.md](references/anti-patterns.md).
+
 ## Working with MLX Code
 
 When writing or reviewing MLX code, check:
@@ -122,6 +140,9 @@ profiling and optimization guides.
 
 Load these on demand for deeper guidance:
 
+- [references/porting-guide.md](references/porting-guide.md) -- Step-by-step
+  PyTorch-to-MLX migration with side-by-side code, API mapping tables, and
+  porting checklist
 - [references/fundamentals.md](references/fundamentals.md) -- Lazy evaluation,
   unified memory, streams, compile, transformations, type system (detailed)
 - [references/nn-and-training.md](references/nn-and-training.md) -- nn.Module

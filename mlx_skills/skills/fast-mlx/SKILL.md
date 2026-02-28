@@ -1,13 +1,14 @@
 ---
 name: fast-mlx
 description: >
-  Optimize MLX code for performance and memory on Apple silicon. Use when asked
-  to speed up, optimize, profile, or benchmark MLX models or algorithms.
-  Triggers on "optimize mlx", "speed up", "reduce latency", "throughput",
-  "profiling", "benchmark", "memory optimization", "mx.compile tuning",
-  "slow inference", "reduce memory", or "make it faster". Covers graph
-  evaluation, type promotion, fast ops, compilation strategy, memory
-  management, and domain-specific optimization for LLMs and diffusion models.
+  Optimize existing MLX code for speed and memory. Use after code already works
+  but needs to run faster or use less memory. NOT for writing new MLX code or
+  porting (use the mlx skill for that). Triggers on "optimize mlx", "speed up",
+  "reduce latency", "throughput", "profiling", "benchmark", "memory
+  optimization", "mx.compile tuning", "slow inference", "reduce memory",
+  "make it faster", "performance tuning", or "why is my mlx code slow". Covers
+  profiling, compilation strategy, type promotion, fast ops, memory management,
+  and domain-specific optimization for LLMs and diffusion models.
 metadata:
   author: Fred Bliss
   version: 0.4.0
@@ -15,12 +16,24 @@ metadata:
 
 # Fast MLX
 
+## When to Use This Skill
+
+Use `/fast-mlx` when you have working MLX code that needs to run faster or use
+less memory. This skill is about optimization, not correctness.
+
+Use `/mlx` instead when you need to:
+- Write new MLX code or port from PyTorch
+- Learn MLX fundamentals
+- Debug errors (not performance issues)
+
+Use `/mlx-lm` instead when you need to:
+- Set up model loading, generation, or fine-tuning
+
 ## Prerequisites
 
 Load the `mlx` skill first if you need background on lazy evaluation, type
 promotion, or other MLX fundamentals. Load the `mlx-lm` skill for language
-model-specific patterns. This skill focuses specifically on performance
-optimization.
+model-specific patterns.
 
 ## Workflow
 

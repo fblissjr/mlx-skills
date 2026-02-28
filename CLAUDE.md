@@ -6,6 +6,24 @@ This is a skills package that teaches AI coding assistants (Claude Code, Codex,
 OpenCode) how to write correct, performant MLX code. Skills are markdown files
 with YAML frontmatter that get installed into an assistant's skills directory.
 
+## Which Skill Do I Need?
+
+| I want to... | Use | Command |
+|--------------|-----|---------|
+| Port PyTorch code to MLX | mlx | `/mlx` |
+| Write a custom MLX model | mlx | `/mlx` |
+| Learn MLX fundamentals | mlx | `/mlx` |
+| Write a training loop | mlx | `/mlx` |
+| Debug MLX errors | mlx | `/mlx` |
+| Run a HuggingFace model on my Mac | mlx-lm | `/mlx-lm` |
+| Fine-tune with LoRA | mlx-lm | `/mlx-lm` |
+| Quantize a model | mlx-lm | `/mlx-lm` |
+| Set up a local LLM server | mlx-lm | `/mlx-lm` |
+| Speed up my MLX code | fast-mlx | `/fast-mlx` |
+| Reduce memory usage | fast-mlx | `/fast-mlx` |
+| Profile performance | fast-mlx | `/fast-mlx` |
+| Update skills from upstream | update-skills | `/update-skills` |
+
 ## Skills and When They Load
 
 There are three skills. Each has a `SKILL.md` (always loaded when triggered)
@@ -13,8 +31,11 @@ and `references/` files (loaded on demand).
 
 ### mlx (core framework)
 
+**Use for:** Writing, porting, debugging, or learning MLX code.
+
 **Triggers:** `import mlx`, `from mlx`, `mx.array`, `mx.compile`, `mx.eval`,
-`nn.Module`, `nn.Linear`, `mlx.optimizers`, writing/debugging/optimizing MLX code.
+`nn.Module`, `nn.Linear`, `mlx.optimizers`, "port to mlx", "convert from
+pytorch", "training loop", writing/debugging MLX code.
 
 **Invocation:**
 - Automatic: mention MLX concepts or work with MLX code
@@ -22,25 +43,31 @@ and `references/` files (loaded on demand).
 - From other skills: "For core MLX concepts, load the mlx skill"
 
 **What it covers:** lazy evaluation, unified memory, compile, nn.Module system,
-layers, optimizers, training patterns, debugging.
+layers, optimizers, training patterns, debugging, PyTorch-to-MLX porting.
 
 ### mlx-lm (language models)
 
+**Use for:** Running, fine-tuning, or serving existing HuggingFace models.
+
 **Triggers:** `import mlx_lm`, `from mlx_lm import`, `stream_generate`,
-`KVCache`, LoRA, quantization, GGUF, safetensors, LLM inference on Apple silicon.
+`KVCache`, LoRA, quantization, GGUF, safetensors, "run llama", "run a model
+on my mac", "local LLM", "huggingface model".
 
 **Invocation:**
 - Automatic: scan imports for `mlx_lm` usage
 - Explicit: `/mlx-lm` or "load the mlx-lm skill"
 - From other skills: "load the mlx-lm skill for generation patterns"
 
-**What it covers:** model architecture, generation pipelines, KV cache,
+**What it covers:** model loading, generation pipelines, KV cache,
 quantization, fine-tuning, server deployment.
 
 ### fast-mlx (performance)
 
+**Use for:** Optimizing working MLX code that needs to be faster or use less memory.
+
 **Triggers:** "optimize mlx", "speed up", "reduce latency", "profiling",
-`mx.compile`, `mx.metal`, memory optimization.
+`mx.compile`, `mx.metal`, memory optimization, "make it faster", "why is my
+mlx code slow".
 
 **Invocation:**
 - Automatic: ask to optimize or profile MLX code
@@ -51,6 +78,13 @@ quantization, fine-tuning, server deployment.
 memory management, profiling, LLM/diffusion-specific optimization.
 
 ## Usage Scenarios
+
+### "Port my PyTorch model to MLX"
+1. `/mlx` loads core skill with porting checklist and comparison table
+2. Reference `porting-guide.md` for step-by-step migration with side-by-side
+   PyTorch/MLX code and API mapping tables
+3. Reference `anti-patterns.md` for PyTorch habits that break in MLX
+4. Reference `nn-and-training.md` for MLX layer equivalents
 
 ### "Optimize my MLX project"
 1. Claude scans imports for `import mlx`, `from mlx_lm import`, etc.
@@ -83,6 +117,12 @@ memory management, profiling, LLM/diffusion-specific optimization.
 1. `/mlx-lm` loads language model skill
 2. Reference `patterns.md` for LoRA patterns and quantization
 3. Reference `architecture.md` for fine-tuning flow
+
+### "Update skills from upstream" (maintainer)
+1. `/update-skills` loads the maintainer workflow skill
+2. Runs `scripts/check_updates.py --diff` to generate a change report
+3. Analyzes diffs, routes changes to the right reference files
+4. Updates reference files (not SKILL.md), validates, and reports
 
 ## Development
 
