@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-02
 
 # MLX Anti-Patterns
 
@@ -409,7 +409,9 @@ loss, grads = nn.value_and_grad(model, loss_fn)(model, x, y)
 ### Using QQLinear When QuantizedLinear Suffices
 
 If weights do not need to be trainable, prefer `nn.QuantizedLinear` -- it is
-simpler and does not carry the train/eval mode complexity.
+simpler and does not carry the train/eval mode complexity. Use
+`layer.to_quantized(mode="nvfp4")` to convert a `nn.Linear`; pass
+`quantize_input=True` only when you need trainable `QQLinear`.
 
 ## Softmax Precision
 
