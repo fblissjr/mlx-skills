@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-02
 
 # nn Module and Training
 
@@ -223,6 +223,11 @@ module wrapper.
 dequantize on `.train()` and quantize in eval mode. Use
 `nn.QQLinear.from_linear(layer, mode="nvfp4")` to convert. Prefer
 `QuantizedLinear` when weights do not need training.
+
+`nn.Linear` provides `to_quantized(group_size, bits, mode, quantize_input)`.
+With `quantize_input=False` (default), returns `QuantizedLinear`. With
+`quantize_input=True`, returns `QQLinear` -- only `"nvfp4"` and `"mxfp8"` modes
+support input quantization; other modes raise `ValueError`.
 
 ### Other
 

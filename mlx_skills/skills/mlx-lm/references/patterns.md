@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-02
 
 # Idiomatic MLX Patterns
 
@@ -428,6 +428,30 @@ mlx-lm supports batched generation via `BatchGenerator`:
 - Processes prefills in groups of `prefill_batch_size`
 - Generates completions up to `completion_batch_size` concurrently
 - Filters finished sequences in-place from the batch
+
+Memory management in batch generation:
+
+- `mx.clear_cache()` every 512 tokens prevents memory growth from
+  variable-shape computations across batches
+- Include all dependent arrays in `mx.async_eval()` to prevent graph node
+  accumulation when some outputs are not immediately consumed
+
+```python
+# Periodic cache clearing in batch generation
+_next_count = 0
+
+while active_sequences:
+    batch = step(batch)
+    _next_count += 1
+
+    # Clear every 512 tokens to prevent memory growth
+    if _next_count % 512 == 0:
+        mx.clear_cache()
+
+    # Include all outputs in async_eval -- omitting batch.tokens
+    # would keep graph nodes alive until next synchronous eval
+    mx.async_eval(batch.logits, batch.tokens)
+```
 
 ## Quantization Patterns
 

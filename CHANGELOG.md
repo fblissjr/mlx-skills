@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.4
+
+### Changed
+
+- Upstream sync (Feb 23 - Mar 1, 2026): 19 commits across mlx/mlx-lm, 3
+  changes relevant to skill reference files
+- `mlx/references/nn-and-training.md`: added `Linear.to_quantized()` conversion
+  path with `quantize_input` parameter for `QQLinear` (nvfp4/mxfp8 only)
+- `mlx-lm/references/patterns.md`: added batch generation memory management
+  patterns -- periodic `mx.clear_cache()` every 512 tokens and including all
+  dependent arrays in `mx.async_eval()` to prevent graph node accumulation
+- `fast-mlx/references/llm-optimization.md`: added graph management note for
+  `mx.async_eval()` with good/bad code comparison; added periodic cache clearing
+  subsection for custom batch generation loops
+
 ## 0.4.3
 
 ### Added

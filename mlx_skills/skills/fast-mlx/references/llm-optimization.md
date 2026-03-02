@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-02
 
 # LLM Optimization Guide
 
@@ -125,6 +125,21 @@ while generating:
 2. The generation stream must be separate from any stream doing synchronous work
 3. Wait for previous result only AFTER dispatching next computation
 
+**Graph management in async_eval:** Every array passed to `mx.async_eval()`
+has its computation graph evaluated and released. Arrays *not* included keep
+their graph nodes alive until the next synchronous `mx.eval()`, causing memory
+growth over many iterations.
+
+```python
+# Bad -- batch.tokens graph nodes accumulate
+next_y, next_logprobs = _step(y)
+mx.async_eval(next_y, next_logprobs)  # batch.tokens graph stays alive
+
+# Good -- include all dependent arrays
+next_y, next_logprobs = _step(y)
+mx.async_eval(next_y, next_logprobs, batch.tokens)  # all graphs released
+```
+
 ### Wired Memory Limit
 
 Pin model weights in physical memory to prevent OS paging:
@@ -206,6 +221,25 @@ gen.close()
 - Left-padding wastes compute on padding tokens
 - Use `filter()` to remove finished sequences promptly
 - Consider `max_kv_size` to cap per-sequence cache size
+
+### Periodic Cache Clearing in Batch Loops
+
+Variable-shape computations across batch iterations cause MLX's memory
+allocator to accumulate buffers. Call `mx.clear_cache()` periodically
+(every ~512 tokens) to reclaim them:
+
+```python
+_next_count = 0
+
+while active_sequences:
+    batch = step(batch)
+    _next_count += 1
+    if _next_count % 512 == 0:
+        mx.clear_cache()
+```
+
+This is already handled by `BatchGenerator` but must be added manually
+in custom batch generation loops.
 
 ## Speculative Decoding
 
