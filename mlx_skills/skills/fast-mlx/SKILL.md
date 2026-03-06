@@ -9,9 +9,12 @@ description: >
   "make it faster", "performance tuning", or "why is my mlx code slow". Covers
   profiling, compilation strategy, type promotion, fast ops, memory management,
   and domain-specific optimization for LLMs and diffusion models.
+license: MIT
+compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 metadata:
   author: Fred Bliss
-  version: 0.4.0
+  version: 0.4.6
+  last_verified: "2026-03-06"
 ---
 
 # Fast MLX
@@ -51,7 +54,7 @@ model-specific patterns.
    evaluation, and periodic `mx.clear_cache()`.
 7. Suggest profiling steps if the bottleneck is unclear.
 
-## Domain-Specific Guides
+## Domain-Specific Guides (loaded on demand -- not in context until you open them)
 
 Pick the guide that matches your optimization target:
 
@@ -64,11 +67,11 @@ Pick the guide that matches your optimization target:
 - **General compute**: Read [references/compute-optimization.md](references/compute-optimization.md)
   for matrix ops, element-wise fusion, vmap, streaming, and data pipelines.
 
-## General References
+## General References (loaded on demand -- not in context until you open them)
 
-- Read [references/fast-mlx-guide.md](references/fast-mlx-guide.md) for the
-  comprehensive performance guide covering graph evaluation, type promotion,
-  operations, compile, memory, and profiling. Use it as the source of truth.
+- [references/fast-mlx-guide.md](references/fast-mlx-guide.md) -- comprehensive
+  performance guide covering graph evaluation, type promotion, operations,
+  compile, memory, and profiling. Use it as the source of truth.
 
 ## Output Expectations
 

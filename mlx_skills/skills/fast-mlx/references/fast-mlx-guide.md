@@ -107,8 +107,7 @@ def generator():
 
 ### Type Promotion
 
-For complete type promotion rules, load the `mlx` skill's
-`references/fundamentals.md`. Key performance implication: accidental
+For complete type promotion rules, load the `mlx` skill. Key performance implication: accidental
 up-casting from float16/bfloat16 to float32 is one of the most common
 performance issues. The critical rule:
 
@@ -170,7 +169,7 @@ higher precision rather than explicitly casting the input and output.
 ### Compile
 
 For how `mx.compile` works (tracing, fusion, recompilation triggers, closures),
-load the `mlx` skill's `references/fundamentals.md`. This section focuses on
+load the `mlx` skill. This section focuses on
 optimization-specific guidance.
 
 **What to compile:**

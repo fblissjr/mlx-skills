@@ -9,9 +9,12 @@ description: >
   "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
   "huggingface model", or "local LLM". Covers model loading, generation
   pipelines, caching, quantization, fine-tuning, and server deployment.
+license: MIT
+compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 metadata:
   author: Fred Bliss
-  version: 0.4.0
+  version: 0.4.6
+  last_verified: "2026-03-06"
 ---
 
 # mlx-lm
@@ -135,9 +138,7 @@ Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
 - **`fast-mlx`** -- Performance optimization (profiling, compilation tuning,
   memory reduction, async pipeline optimization)
 
-## References
-
-Load these on demand for deeper guidance:
+## References (loaded on demand -- not in context until you open them)
 
 - [references/patterns.md](references/patterns.md) -- Idiomatic mlx-lm patterns:
   nn.Module structure, attention, KV cache, generation pipeline, quantization,

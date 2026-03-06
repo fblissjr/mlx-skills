@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.6
+
+### Added
+
+- `license: MIT` field in all three SKILL.md frontmatter blocks
+- `compatibility` field in all three SKILL.md frontmatter blocks
+- `metadata.last_verified` date in all three SKILL.md frontmatter blocks
+
+### Changed
+
+- Clarified on-demand reference loading in SKILL.md bodies (section headings
+  now state "loaded on demand -- not in context until you open them")
+- Fixed cross-reference pattern in `fast-mlx/references/fast-mlx-guide.md`:
+  simplified `load the \`mlx\` skill's \`references/fundamentals.md\`` to
+  standard `load the \`mlx\` skill` pattern (2 occurrences)
+- Synced `metadata.version` to `0.4.6` in all three SKILL.md files (was 0.4.0)
+
 ## 0.4.5
 
 ### Changed

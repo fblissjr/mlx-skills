@@ -9,9 +9,12 @@ description: >
   "migrate to mlx", or any project using the mlx framework. Covers lazy
   evaluation, unified memory, compilation, nn.Module system, layers,
   optimizers, training patterns, debugging, and PyTorch/NumPy migration.
+license: MIT
+compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 metadata:
   author: Fred Bliss
-  version: 0.4.0
+  version: 0.4.6
+  last_verified: "2026-03-06"
 ---
 
 # MLX
@@ -136,9 +139,7 @@ When writing or reviewing MLX code, check:
 For **performance optimization**, load the `fast-mlx` skill which has detailed
 profiling and optimization guides.
 
-## References
-
-Load these on demand for deeper guidance:
+## References (loaded on demand -- not in context until you open them)
 
 - [references/porting-guide.md](references/porting-guide.md) -- Step-by-step
   PyTorch-to-MLX migration with side-by-side code, API mapping tables, and
