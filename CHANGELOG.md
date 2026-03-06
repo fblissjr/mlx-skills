@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.5
+
+### Changed
+
+- Upstream sync (Mar 2-6, 2026): 80 commits across mlx/mlx-lm, 4 changes
+  relevant to skill reference files
+- `mlx-lm/references/patterns.md`: added cache `.nbytes` introspection with
+  `prompt_cache_nbytes` for batch generation; added `CacheList.from_state()`
+  for MLA prompt cache persistence; noted automatic `RotatingKVCache` selection
+  for models with mixed sliding window / full attention layers
+- `mlx-lm/references/architecture.md`: annotated cache.py with `.nbytes`;
+  added `--prefill-step-size` CLI flag to generation flow
+- `fast-mlx/references/llm-optimization.md`: added `--prefill-step-size` CLI
+  note to chunked prefill section; added runtime cache memory monitoring
+  subsection with `.nbytes` usage and `prompt_cache_nbytes` for load shedding
+
 ## 0.4.4
 
 ### Changed

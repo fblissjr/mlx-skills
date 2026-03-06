@@ -1,4 +1,4 @@
-last updated: 2026-03-02
+last updated: 2026-03-06
 
 # LLM Optimization Guide
 
@@ -175,6 +175,10 @@ while len(prompt) > 1:
 The `mx.clear_cache()` call is important -- without it, intermediate buffers
 from different chunk sizes accumulate.
 
+The `--prefill-step-size <N>` CLI flag (on `mlx_lm.generate` and the server)
+controls chunk size without code changes. Tune this based on prompt length
+and available memory.
+
 ### Prefill Batch Size
 
 In `BatchGenerator`, `prefill_batch_size` controls how many prompts are
@@ -332,3 +336,19 @@ Example: Llama 3.2 3B at 4-bit with 4096 context:
 - Weights: ~1.5 GB
 - KV cache (fp16): ~0.4 GB per batch item
 - Total for batch=1: ~2 GB
+
+### Runtime Cache Memory Monitoring
+
+All cache types expose `.nbytes` for memory tracking (see the `mlx-lm` skill's
+patterns reference for basic usage). In server contexts, use
+`BatchGenerator.prompt_cache_nbytes` to monitor aggregate cache size and
+implement memory-aware load shedding:
+
+```python
+gen = BatchGenerator(model, ...)
+gen.insert(prompts)
+while responses := gen.next():
+    if gen.prompt_cache_nbytes > threshold:
+        # Shed load or alert
+        ...
+```

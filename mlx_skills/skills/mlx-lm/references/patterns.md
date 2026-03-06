@@ -1,4 +1,4 @@
-last updated: 2026-03-02
+last updated: 2026-03-06
 
 # Idiomatic MLX Patterns
 
@@ -336,6 +336,31 @@ def make_cache(self):
 `CacheList` propagates `update_and_fetch`, `trim`, `filter`, and `state` to
 all sub-caches transparently.
 
+State persistence for MLA models uses properly nested state/meta_state:
+
+```python
+# Save
+state = [c.state for c in prompt_cache]
+meta_state = [c.meta_state for c in prompt_cache]
+
+# Restore (CacheList.from_state reconstructs sub-caches)
+prompt_cache = [CacheList.from_state(s, ms) for s, ms in zip(state, meta_state)]
+```
+
+### Cache Memory Introspection
+
+All cache types expose `.nbytes` for memory monitoring:
+
+```python
+# Per-layer cache size in bytes
+for i, c in enumerate(prompt_cache):
+    print(f"Layer {i}: {c.nbytes / 1e6:.1f} MB")
+
+# Aggregate cache size in BatchGenerator
+gen = BatchGenerator(model, ...)
+print(f"Total cache: {gen.prompt_cache_nbytes / 1e9:.2f} GB")
+```
+
 ### ChunkedKVCache
 
 Sliding window cache that trims the front when exceeding `chunk_size`:
@@ -373,6 +398,10 @@ def make_cache(self):
         for layer in self.layers
     ]
 ```
+
+Models with mixed attention (some layers sliding window, some full context)
+return per-layer `RotatingKVCache` automatically from `make_cache()`.
+Users don't need manual conditional logic -- the model handles it internally.
 
 The `make_prompt_cache()` function delegates to this method or falls back
 to creating `KVCache` / `RotatingKVCache` based on `max_kv_size`.

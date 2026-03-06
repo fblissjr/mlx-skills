@@ -140,7 +140,7 @@ memory management, profiling, LLM/diffusion-specific optimization.
 ```
 uv run mlx-skills --claude --force    # Install skills locally
 uv run mlx-skills-validate            # Validate skill structure
-uv run pytest tests/                  # Run tests (56 tests)
+uv run pytest tests/                  # Run tests (90 tests)
 uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 ```
 

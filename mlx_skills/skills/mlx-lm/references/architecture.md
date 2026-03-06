@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-06
 
 # mlx-lm Architecture
 
@@ -11,7 +11,7 @@ model library for MLX.
 mlx_lm/
   models/
     base.py             BaseModelArgs, create_attention_mask, scaled_dot_product_attention
-    cache.py            KVCache, RotatingKVCache, QuantizedKVCache, BatchKVCache, etc.
+    cache.py            KVCache, RotatingKVCache, QuantizedKVCache, BatchKVCache, etc. (all expose .nbytes)
     rope_utils.py       RoPE variants: Llama3RoPE, YarnRoPE, SuScaledRoPE
     mla.py              MultiLinear for Multi-head Latent Attention
     llama.py            Reference model implementation
@@ -63,7 +63,7 @@ Input: prompt string
 Tokenize -> mx.array of token IDs
   |
   v
-Prefill: process prompt in chunks of prefill_step_size
+Prefill: process prompt in chunks of prefill_step_size (CLI: --prefill-step-size)
   |  - model(chunk, cache=prompt_cache) for each chunk
   |  - Evaluate cache state after each chunk
   |  - mx.clear_cache() after each chunk
