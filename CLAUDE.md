@@ -155,9 +155,15 @@ uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 - `validate.py` tries top-level path first, falls back to `importlib.resources`
 - Every skill directory must have a `SKILL.md` with YAML frontmatter
 - Frontmatter must have `name` (matching directory name) and `description` fields
-- `description` should list trigger keywords and when to use the skill
+- `description` should follow WHAT + WHEN + Capabilities formula, list trigger keywords
+- `description` should end with invocation hint (`Invoke with /mlx-skills:<name>`)
+- `description` uses `>-` (folded, strip) YAML scalar style
+- `metadata` block should have `author`, `version`, and `last_verified` fields
+- Frontmatter also has `license: MIT`, `compatibility`, and `allowed-tools` fields
+- `allowed-tools: "Read, Glob, Grep"` -- knowledge skills should not write files
 - SKILL.md body must be under 5000 words (this is always loaded into context)
 - Reference files go in `references/` and are loaded on demand
+- Reference files should start with `last updated: YYYY-MM-DD`
 - Cross-references use `load the \`skill-name\` skill` pattern
 - Run `uv run mlx-skills-validate` after any changes to verify structure
 
