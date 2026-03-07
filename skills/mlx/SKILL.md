@@ -1,6 +1,6 @@
 ---
 name: mlx
-description: >
+description: >-
   Core MLX framework knowledge for Apple silicon ML development. Use when
   writing, debugging, reviewing, porting, or converting code to MLX. Triggers
   on "import mlx", "from mlx", "mx.array", "mx.compile", "mx.eval",
@@ -9,8 +9,10 @@ description: >
   "migrate to mlx", or any project using the mlx framework. Covers lazy
   evaluation, unified memory, compilation, nn.Module system, layers,
   optimizers, training patterns, debugging, and PyTorch/NumPy migration.
+  Invoke with /mlx-skills:mlx.
 license: MIT
 compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
+allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
   version: 0.5.0

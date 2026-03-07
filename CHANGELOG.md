@@ -9,6 +9,11 @@
 - `plugins/mlx-skills/` wrapper directory for marketplace compatibility
   (marketplace `source` cannot be `"."`; requires a subdirectory path)
 - Plugin installation via `claude plugin add` (local path or GitHub)
+- `allowed-tools: "Read, Glob, Grep"` in all SKILL.md frontmatter (knowledge
+  skills should not write files)
+- Invocation hints in all SKILL.md descriptions (`Invoke with /mlx-skills:mlx`)
+- `>-` (folded, strip) YAML scalar style for descriptions (matches
+  fb-claude-skills convention)
 
 ### Changed
 

@@ -1,6 +1,6 @@
 ---
 name: mlx-lm
-description: >
+description: >-
   Apple's official language model library for MLX. Use when running, serving,
   fine-tuning, or quantizing HuggingFace transformer models on Apple silicon.
   NOT for writing custom MLX models from scratch or porting PyTorch code (use
@@ -9,8 +9,10 @@ description: >
   "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
   "huggingface model", or "local LLM". Covers model loading, generation
   pipelines, caching, quantization, fine-tuning, and server deployment.
+  Invoke with /mlx-skills:mlx-lm.
 license: MIT
 compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
+allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
   version: 0.5.0

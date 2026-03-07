@@ -1,6 +1,6 @@
 ---
 name: fast-mlx
-description: >
+description: >-
   Optimize existing MLX code for speed and memory. Use after code already works
   but needs to run faster or use less memory. NOT for writing new MLX code or
   porting (use the mlx skill for that). Triggers on "optimize mlx", "speed up",
@@ -9,8 +9,10 @@ description: >
   "make it faster", "performance tuning", or "why is my mlx code slow". Covers
   profiling, compilation strategy, type promotion, fast ops, memory management,
   and domain-specific optimization for LLMs and diffusion models.
+  Invoke with /mlx-skills:fast-mlx.
 license: MIT
 compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
+allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
   version: 0.5.0
