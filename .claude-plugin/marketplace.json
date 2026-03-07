@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "mlx-skills",
-      "source": ".",
+      "source": "./plugins/mlx-skills",
       "description": "Core MLX framework, language model, and performance optimization skills for Apple silicon ML development",
       "version": "0.5.0"
     }

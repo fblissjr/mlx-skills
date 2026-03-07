@@ -129,8 +129,9 @@ memory management, profiling, LLM/diffusion-specific optimization.
 
 ### Key files
 
-- `.claude-plugin/plugin.json` -- plugin manifest
+- `.claude-plugin/plugin.json` -- root plugin manifest
 - `.claude-plugin/marketplace.json` -- marketplace catalog
+- `plugins/mlx-skills/` -- marketplace plugin wrapper (symlinks to `skills/`)
 - `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
 - `skills/*/references/*.md` -- reference material (loaded on demand)
 - `mlx_skills/cli.py` -- legacy CLI installer (`mlx-skills` entrypoint)

@@ -6,6 +6,8 @@
 
 - Plugin format: `.claude-plugin/plugin.json` manifest and `marketplace.json`
   catalog for native Claude Code plugin installation
+- `plugins/mlx-skills/` wrapper directory for marketplace compatibility
+  (marketplace `source` cannot be `"."`; requires a subdirectory path)
 - Plugin installation via `claude plugin add` (local path or GitHub)
 
 ### Changed

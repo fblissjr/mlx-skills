@@ -86,9 +86,14 @@ uv run python scripts/check_updates.py --since 30days
 
 ```
 .claude-plugin/
-  plugin.json               Plugin manifest
+  plugin.json               Root plugin manifest
   marketplace.json          Marketplace catalog
-skills/                     Plugin skills (auto-discovered)
+plugins/
+  mlx-skills/
+    .claude-plugin/
+      plugin.json           Plugin manifest for marketplace
+    skills -> ../../skills  Symlink to top-level skills
+skills/                     Skill source (auto-discovered)
   mlx/
     SKILL.md
     references/
