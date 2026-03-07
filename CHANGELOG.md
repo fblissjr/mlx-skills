@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- Plugin format: `.claude-plugin/plugin.json` manifest and `marketplace.json`
+  catalog for native Claude Code plugin installation
+- Plugin installation via `claude plugin add` (local path or GitHub)
+
+### Changed
+
+- Skills moved from `mlx_skills/skills/` to top-level `skills/` directory
+  (standard plugin convention); symlink at `mlx_skills/skills/` preserves
+  backward compatibility for pip-based CLI installer
+- README updated with plugin installation as primary method
+- Validator `SKILLS_DIR` now resolves to top-level `skills/`
+
 ## 0.4.6
 
 ### Added

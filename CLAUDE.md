@@ -2,9 +2,10 @@
 
 ## Project Overview
 
-This is a skills package that teaches AI coding assistants (Claude Code, Codex,
-OpenCode) how to write correct, performant MLX code. Skills are markdown files
-with YAML frontmatter that get installed into an assistant's skills directory.
+This is a Claude Code plugin that teaches AI coding assistants how to write
+correct, performant MLX code. It can also be installed standalone for Codex and
+OpenCode. Skills are markdown files with YAML frontmatter in the top-level
+`skills/` directory, auto-discovered by the plugin system.
 
 ## Which Skill Do I Need?
 
@@ -128,10 +129,13 @@ memory management, profiling, LLM/diffusion-specific optimization.
 
 ### Key files
 
-- `mlx_skills/cli.py` -- installer (`mlx-skills` entrypoint)
+- `.claude-plugin/plugin.json` -- plugin manifest
+- `.claude-plugin/marketplace.json` -- marketplace catalog
+- `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
+- `skills/*/references/*.md` -- reference material (loaded on demand)
+- `mlx_skills/cli.py` -- legacy CLI installer (`mlx-skills` entrypoint)
 - `mlx_skills/validate.py` -- validation (`mlx-skills-validate` entrypoint)
-- `mlx_skills/skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
-- `mlx_skills/skills/*/references/*.md` -- reference material (loaded on demand)
+- `mlx_skills/skills` -- symlink to `../skills` (pip distribution compat)
 - `scripts/check_updates.py` -- upstream change scanner
 - `tests/` -- pytest suite
 
@@ -146,6 +150,8 @@ uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 
 ### Skill structure rules
 
+- Skills are at top-level `skills/`; `mlx_skills/skills` is a symlink for pip compat
+- `validate.py` tries top-level path first, falls back to `importlib.resources`
 - Every skill directory must have a `SKILL.md` with YAML frontmatter
 - Frontmatter must have `name` (matching directory name) and `description` fields
 - `description` should list trigger keywords and when to use the skill

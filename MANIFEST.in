@@ -1,1 +1,1 @@
-recursive-include mlx_skills/skills *
+recursive-include skills *

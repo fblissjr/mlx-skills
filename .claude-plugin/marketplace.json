@@ -1,0 +1,17 @@
+{
+  "name": "mlx-skills",
+  "owner": {
+    "name": "Fred Bliss"
+  },
+  "metadata": {
+    "description": "Skills for writing correct, performant MLX code on Apple silicon"
+  },
+  "plugins": [
+    {
+      "name": "mlx-skills",
+      "source": ".",
+      "description": "Core MLX framework, language model, and performance optimization skills for Apple silicon ML development",
+      "version": "0.5.0"
+    }
+  ]
+}

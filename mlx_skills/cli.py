@@ -22,7 +22,7 @@ def _install_to(target: Path, skills_root: Path, force: bool) -> None:
     target = target.expanduser()
     target.mkdir(parents=True, exist_ok=True)
 
-    skill_dirs = [path for path in sorted(skills_root.iterdir()) if path.is_dir()]
+    skill_dirs = [path for path in sorted(skills_root.iterdir()) if path.is_dir() and not path.name.startswith(".")]
 
     if not force:
         conflicts = [target / skill.name for skill in skill_dirs if (target / skill.name).exists()]

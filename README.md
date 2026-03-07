@@ -8,7 +8,19 @@ can invoke them explicitly.
 
 ## Install
 
-### From local clone
+### As a plugin (recommended)
+
+```
+claude plugin add /path/to/mlx-skills
+```
+
+Or from GitHub:
+
+```
+claude plugin add fblissjr/mlx-skills
+```
+
+### From local clone (legacy)
 
 ```
 cd mlx-skills
@@ -19,9 +31,8 @@ Other targets: `--codex`, `--opencode`, or `--dest /path/to/skills`.
 
 ### Manual
 
-Copy the `mlx_skills/skills/mlx`, `mlx_skills/skills/mlx-lm`, and
-`mlx_skills/skills/fast-mlx` directories into your assistant's skills directory
-(e.g., `~/.claude/skills/`).
+Copy the `skills/mlx`, `skills/mlx-lm`, and `skills/fast-mlx` directories
+into your assistant's skills directory (e.g., `~/.claude/skills/`).
 
 ## Usage
 
@@ -151,29 +162,33 @@ repos, or `--repos-dir` to point at existing local clones instead.
 ## Structure
 
 ```
-mlx_skills/
-  cli.py                  CLI installer
-  validate.py             Skill validation script
-  skills/
-    mlx/
-      SKILL.md              Core skill (loaded always)
-      references/
-        fundamentals.md     Deep dive: lazy eval, memory, streams, compile, types
-        nn-and-training.md  nn.Module system, layers, losses, optimizers, training
-        anti-patterns.md    Common mistakes
-        debugging.md        Debugging and profiling guide
-    mlx-lm/
-      SKILL.md              Language model skill (loaded always)
-      references/
-        patterns.md         Idiomatic mlx-lm patterns
-        architecture.md     mlx-lm architecture and integration
-    fast-mlx/
-      SKILL.md              Optimization skill (loaded always)
-      references/
-        fast-mlx-guide.md   Comprehensive performance guide
-        llm-optimization.md LLM-specific optimization
-        dit-optimization.md Diffusion model optimization
-        compute-optimization.md  General compute optimization
+.claude-plugin/
+  plugin.json               Plugin manifest
+  marketplace.json          Marketplace catalog
+skills/                     Plugin skills (auto-discovered)
+  mlx/
+    SKILL.md                Core skill (loaded always)
+    references/
+      fundamentals.md       Deep dive: lazy eval, memory, streams, compile, types
+      nn-and-training.md    nn.Module system, layers, losses, optimizers, training
+      anti-patterns.md      Common mistakes
+      debugging.md          Debugging and profiling guide
+      porting-guide.md      PyTorch-to-MLX migration
+  mlx-lm/
+    SKILL.md                Language model skill (loaded always)
+    references/
+      patterns.md           Idiomatic mlx-lm patterns
+      architecture.md       mlx-lm architecture and integration
+  fast-mlx/
+    SKILL.md                Optimization skill (loaded always)
+    references/
+      fast-mlx-guide.md     Comprehensive performance guide
+      llm-optimization.md   LLM-specific optimization
+      dit-optimization.md   Diffusion model optimization
+      compute-optimization.md  General compute optimization
+mlx_skills/                 Python package (CLI tools)
+  cli.py                    Legacy CLI installer
+  validate.py               Skill validation script
 scripts/
   check_updates.py          Maintenance: scan upstream repos for changes
 tests/
