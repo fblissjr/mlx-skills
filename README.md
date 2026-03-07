@@ -48,7 +48,20 @@ assistant's skills directory (e.g., `~/.claude/skills/`).
 ### invocation
 
 Skills load automatically when Claude detects relevant imports or keywords.
-Invoke explicitly with `/mlx`, `/mlx-lm`, or `/fast-mlx`.
+
+Explicit invocation depends on how you installed:
+
+```bash
+# Plugin install (namespaced)
+/mlx-skills:mlx
+/mlx-skills:mlx-lm
+/mlx-skills:fast-mlx
+
+# Legacy CLI / manual install (personal skills)
+/mlx
+/mlx-lm
+/fast-mlx
+```
 
 ### reference files (loaded on demand)
 

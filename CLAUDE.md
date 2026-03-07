@@ -11,18 +11,18 @@ OpenCode. Skills are markdown files with YAML frontmatter in the top-level
 
 | I want to... | Use | Command |
 |--------------|-----|---------|
-| Port PyTorch code to MLX | mlx | `/mlx` |
-| Write a custom MLX model | mlx | `/mlx` |
-| Learn MLX fundamentals | mlx | `/mlx` |
-| Write a training loop | mlx | `/mlx` |
-| Debug MLX errors | mlx | `/mlx` |
-| Run a HuggingFace model on my Mac | mlx-lm | `/mlx-lm` |
-| Fine-tune with LoRA | mlx-lm | `/mlx-lm` |
-| Quantize a model | mlx-lm | `/mlx-lm` |
-| Set up a local LLM server | mlx-lm | `/mlx-lm` |
-| Speed up my MLX code | fast-mlx | `/fast-mlx` |
-| Reduce memory usage | fast-mlx | `/fast-mlx` |
-| Profile performance | fast-mlx | `/fast-mlx` |
+| Port PyTorch code to MLX | mlx | `/mlx-skills:mlx` |
+| Write a custom MLX model | mlx | `/mlx-skills:mlx` |
+| Learn MLX fundamentals | mlx | `/mlx-skills:mlx` |
+| Write a training loop | mlx | `/mlx-skills:mlx` |
+| Debug MLX errors | mlx | `/mlx-skills:mlx` |
+| Run a HuggingFace model on my Mac | mlx-lm | `/mlx-skills:mlx-lm` |
+| Fine-tune with LoRA | mlx-lm | `/mlx-skills:mlx-lm` |
+| Quantize a model | mlx-lm | `/mlx-skills:mlx-lm` |
+| Set up a local LLM server | mlx-lm | `/mlx-skills:mlx-lm` |
+| Speed up my MLX code | fast-mlx | `/mlx-skills:fast-mlx` |
+| Reduce memory usage | fast-mlx | `/mlx-skills:fast-mlx` |
+| Profile performance | fast-mlx | `/mlx-skills:fast-mlx` |
 | Update skills from upstream | update-skills | `/update-skills` |
 
 ## Skills and When They Load
@@ -40,7 +40,7 @@ pytorch", "training loop", writing/debugging MLX code.
 
 **Invocation:**
 - Automatic: mention MLX concepts or work with MLX code
-- Explicit: `/mlx` or "load the mlx skill"
+- Explicit: `/mlx-skills:mlx` (plugin) or `/mlx` (personal skill)
 - From other skills: "For core MLX concepts, load the mlx skill"
 
 **What it covers:** lazy evaluation, unified memory, compile, nn.Module system,
@@ -56,7 +56,7 @@ on my mac", "local LLM", "huggingface model".
 
 **Invocation:**
 - Automatic: scan imports for `mlx_lm` usage
-- Explicit: `/mlx-lm` or "load the mlx-lm skill"
+- Explicit: `/mlx-skills:mlx-lm` (plugin) or `/mlx-lm` (personal skill)
 - From other skills: "load the mlx-lm skill for generation patterns"
 
 **What it covers:** model loading, generation pipelines, KV cache,
@@ -72,7 +72,7 @@ mlx code slow".
 
 **Invocation:**
 - Automatic: ask to optimize or profile MLX code
-- Explicit: `/fast-mlx` or "load the fast-mlx skill"
+- Explicit: `/mlx-skills:fast-mlx` (plugin) or `/fast-mlx` (personal skill)
 - From other skills: "For performance optimization, load the fast-mlx skill"
 
 **What it covers:** graph evaluation, type promotion, fast ops, compilation,
