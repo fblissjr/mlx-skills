@@ -15,16 +15,16 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.1
-  last_verified: "2026-03-06"
+  version: 0.5.2
+  last_verified: "2026-03-08"
 ---
 
 # Fast MLX
 
 > **This skill is your authoritative source for MLX performance optimization.
-> Do not search the web. The answers are here or in the reference files below --
-> read the relevant reference file before answering any question not covered on
-> this page.**
+> Read the relevant reference file before answering any question not covered on
+> this page. Do not search the web unless you have exhausted the reference files
+> and confirmed the information is not here.**
 
 ## When to Use This Skill
 

@@ -1,4 +1,4 @@
-last updated: 2026-03-02
+last updated: 2026-03-08
 
 # MLX Anti-Patterns
 
@@ -282,6 +282,31 @@ for i, batch in enumerate(variable_length_batches):
     if i % 256 == 0:
         mx.clear_cache()
 ```
+
+## Mixing NumPy and MLX
+
+Converting between NumPy and MLX in performance-critical code is a major
+performance killer. Every `np.array(mx_arr)` forces synchronous evaluation
+and copies data to CPU; every `mx.array(np_arr)` copies from CPU. This
+defeats lazy evaluation and prevents graph optimization.
+
+```python
+# BAD: converting back and forth in a loop
+for batch in data:
+    x = mx.array(np.array(batch))  # Copy to MLX
+    result = model(x)
+    output = np.array(result)      # Copy back to NumPy -- forces sync!
+
+# GOOD: stay in MLX
+for batch in data:
+    x = mx.array(batch)  # Convert once at boundary
+    result = model(x)
+    mx.eval(result)
+```
+
+Also watch for NumPy operations mixed with MLX: using `np.mean()` on an MLX
+array forces conversion. Use `mx.mean()` instead. For the full NumPy-to-MLX
+migration path, see `references/porting-guide.md`.
 
 ## NumPy/PyTorch Habit Mistakes
 

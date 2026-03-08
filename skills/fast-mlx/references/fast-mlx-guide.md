@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-08
 
 # Making MLX Go Fast
 
@@ -155,6 +155,14 @@ mx.fast.rms_norm(x, w, b, eps)
 
 Similarly, for `mx.softmax` use `precise=True` if you want to do the softmax in
 higher precision rather than explicitly casting the input and output.
+
+#### Avoid NumPy in Hot Paths
+
+Mixing NumPy and MLX operations in performance-critical code is a common
+performance killer. Every `np.array(mx_arr)` forces synchronization and copies
+data to CPU; every `mx.array(np_arr)` copies from CPU. Convert once at the data
+boundary and stay in MLX for the entire computation. For the full NumPy-to-MLX
+migration path, load the `mlx` skill and see `references/porting-guide.md`.
 
 #### Misc
 
@@ -359,53 +367,26 @@ Common mistakes:
 - **Timing compilation**: If shapes/types change between iterations, you time
   recompilation instead of execution
 
+For concrete benchmarking recipes (model inference, before/after comparison,
+token throughput), see `compute-optimization.md`.
+
 ### Compile State Capture for Training
 
-When compiling a training step, model and optimizer state must be captured as
-both inputs and outputs:
+For the full compiled training pattern with `inputs=`/`outputs=` state capture,
+load the `mlx` skill and see `references/nn-and-training.md`.
 
-```python
-from functools import partial
-
-state = [model.state, optimizer.state]
-
-@partial(mx.compile, inputs=state, outputs=state)
-def step(x, y):
-    loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
-    loss, grads = loss_and_grad_fn(model, x, y)
-    optimizer.update(model, grads)
-    return loss
-
-for x, y in dataset:
-    loss = step(x, y)
-    mx.eval(state)
-```
-
-The `inputs=state` tells compile to track changes to the state containers.
-The `outputs=state` tells compile to capture any state mutations as outputs.
-Without these, the compiled function treats state as constant and produces
-wrong results after the first call.
-
-If your model uses `nn.Dropout` or other random layers, also include
-`mx.random.state` in the state list:
+Key optimization note: if your model uses `nn.Dropout` or other random layers,
+include `mx.random.state` in the state list to avoid stale random state:
 ```python
 state = [model.state, optimizer.state, mx.random.state]
 ```
 
-### Complete Memory Management API
+### Memory Management API
 
-| Function | Description |
-|----------|-------------|
-| `mx.metal.get_active_memory()` | Currently allocated bytes on GPU |
-| `mx.metal.get_peak_memory()` | Peak allocation since last reset |
-| `mx.metal.reset_peak_memory()` | Reset the peak memory counter |
-| `mx.metal.get_cache_memory()` | Bytes cached (freed but held for reuse) |
-| `mx.metal.set_memory_limit(n)` | Soft limit on total GPU memory allocation |
-| `mx.metal.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
-| `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents OS paging) |
-| `mx.clear_cache()` | Release all cached buffers back to the system |
+For the complete API table, load the `mlx` skill and see
+`references/fundamentals.md`.
 
-**set_memory_limit vs set_cache_limit**:
+**Optimization guidance -- set_memory_limit vs set_cache_limit**:
 - `set_memory_limit(n)`: Controls the total memory MLX can allocate. Allocations
   beyond this limit use the cache or may fail. Use this to prevent MLX from
   consuming all system memory.

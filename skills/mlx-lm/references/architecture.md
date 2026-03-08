@@ -315,10 +315,7 @@ Each parser implements `parse_tool_call(text, tools)` to extract structured
 function calls from model output. Chat templates in `mlx_lm/chat_templates/`
 handle tool message formatting.
 
-Server usage:
-```bash
-mlx_lm.server --model MODEL --tool-parser mistral
-```
-
-The `--tool-parser` flag selects the parser. Tools are passed in the standard
-OpenAI format in `/v1/chat/completions` requests.
+Tool parsing is configured via the model's chat template, not a CLI flag. The
+server auto-detects the correct parser based on the model's tokenizer config.
+Tools are passed in the standard OpenAI format in `/v1/chat/completions`
+requests.

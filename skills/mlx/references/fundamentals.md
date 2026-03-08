@@ -531,6 +531,8 @@ MLX supports distributed communication via `mx.distributed`:
 | `group.rank()` | Rank of the current process |
 | `mx.distributed.all_sum(x, group)` | Sum across all processes |
 | `mx.distributed.all_gather(x, group)` | Gather arrays from all processes |
+| `mx.distributed.all_max(x, group)` | Element-wise max across all processes |
+| `mx.distributed.all_min(x, group)` | Element-wise min across all processes |
 | `mx.distributed.send(x, dst, group)` | Send to a specific rank |
 | `mx.distributed.recv(shape, dtype, src, group)` | Receive from a specific rank |
 
@@ -539,12 +541,16 @@ MLX supports distributed communication via `mx.distributed`:
 ### nn.quantize
 
 ```python
-nn.quantize(model, group_size=64, bits=4, class_predicate=None)
+nn.quantize(model, group_size=None, bits=None, class_predicate=None, mode="affine")
 ```
 
 Quantize model weights in-place. Replaces `nn.Linear` layers with
-`nn.QuantizedLinear`. The `class_predicate` function controls which layers to
-quantize (default: all `nn.Linear` and `nn.Embedding` layers).
+`nn.QuantizedLinear`. The `mode` parameter selects the quantization scheme
+(`"affine"`, `"mxfp4"`, `"nvfp4"`, `"mxfp8"`); `group_size` and `bits`
+default to `None` and are determined by the mode when not specified (e.g.,
+`affine` defaults to `group_size=64, bits=4`). The `class_predicate` function
+controls which layers to quantize (default: all `nn.Linear` and `nn.Embedding`
+layers).
 
 ```python
 # Quantize all linear layers to 4-bit

@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.5.2
+
+### Fixed
+
+- Removed non-existent `--tool-parser` CLI flag from server docs in
+  cli-reference.md and architecture.md; tool parsing is configured via model
+  chat template, not a CLI flag
+- Fixed `nn.quantize` signature: added `mode` parameter, corrected
+  `group_size`/`bits` defaults to `None` (mode-dependent)
+- Added missing `all_max` and `all_min` to distributed API table
+- Added missing benchmark CLI flags (`--prompt-tokens`, `--generation-tokens`,
+  `--batch-size`, `--num-trials`)
+- Added actual server flags (`--log-level`, `--chat-template`, `--pipeline`)
+
+### Added
+
+- NumPy-to-MLX porting section in porting-guide.md: performance trap, data
+  boundary pattern, API mapping table (35+ operations), and NumPy patterns
+  that need rethinking (float64, in-place mutation, eager assumptions)
+- "Mixing NumPy and MLX" anti-pattern section in anti-patterns.md
+- "Avoid NumPy in Hot Paths" note in fast-mlx-guide.md Operations section
+
+### Changed
+
+- Softened authority preamble in all three SKILL.md files: web search now
+  allowed as last resort after exhausting reference files (was blanket
+  prohibition)
+- Replaced duplicated compile state capture section in fast-mlx-guide.md with
+  cross-reference to mlx skill's nn-and-training.md (kept optimization-specific
+  Dropout/random state tip)
+- Replaced duplicated memory management API table in fast-mlx-guide.md with
+  cross-reference to mlx skill's fundamentals.md (kept optimization-specific
+  set_memory_limit vs set_cache_limit guidance)
+- Added benchmarking recipes cross-reference from fast-mlx-guide.md to
+  compute-optimization.md
+- Updated mlx SKILL.md porting section to mention NumPy migration coverage
+- Removed stale local directory references from changelog
+
 ## 0.5.1
 
 ### Added
@@ -250,9 +288,9 @@
 - `mlx-lm/references/architecture.md`: added input/output shape comment to
   Model.__call__
 - Updated README.md with validation section and corrected paths
-- `scripts/check_updates.py`: removed hardcoded `coderef` directory convention;
-  now fetches directly from GitHub by default (shallow bare clones to temp dir).
-  `--repos-dir` or `MLX_SKILLS_REPOS` env var available for local clones.
+- `scripts/check_updates.py`: now fetches directly from GitHub by default
+  (shallow bare clones to temp dir). `--repos-dir` or `MLX_SKILLS_REPOS` env
+  var available for local clones.
 
 ### Removed
 

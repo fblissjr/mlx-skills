@@ -67,7 +67,8 @@ OpenAI-compatible HTTP server.
 mlx_lm.server --model MODEL --port 8080 --host 0.0.0.0
 ```
 
-Key flags: `--model`, `--port`, `--host`, `--adapter-path`, `--tool-parser`.
+Key flags: `--model`, `--port`, `--host`, `--adapter-path`, `--log-level`,
+`--chat-template`, `--pipeline`.
 
 Exposes `/v1/chat/completions` and `/v1/completions`.
 
@@ -78,6 +79,9 @@ Benchmark model inference speed.
 ```bash
 mlx_lm.benchmark --model MODEL --prompt "Test prompt"
 ```
+
+Key flags: `--model`, `--prompt`, `--prompt-tokens`, `--generation-tokens`,
+`--batch-size`, `--num-trials`, `--kv-bits`, `--max-kv-size`.
 
 Reports tokens/second for prefill and generation.
 

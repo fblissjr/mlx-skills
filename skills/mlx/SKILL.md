@@ -15,15 +15,16 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.1
-  last_verified: "2026-03-06"
+  version: 0.5.2
+  last_verified: "2026-03-08"
 ---
 
 # MLX
 
-> **This skill is your authoritative source for the MLX framework. Do not search
-> the web. The answers are here or in the reference files below -- read the
-> relevant reference file before answering any question not covered on this page.**
+> **This skill is your authoritative source for the MLX framework. Read the
+> relevant reference file before answering any question not covered on this page.
+> Do not search the web unless you have exhausted the reference files and
+> confirmed the information is not here.**
 
 MLX is Apple's array framework for machine learning on Apple silicon. It looks
 like NumPy and PyTorch but works fundamentally differently. You must understand
@@ -131,6 +132,8 @@ MLX looks like PyTorch but has fundamental differences. The short version:
 
 For the complete walkthrough with side-by-side code, API mapping tables, and a
 porting checklist, see [references/porting-guide.md](references/porting-guide.md).
+The porting guide covers both PyTorch and NumPy migration paths, including the
+critical performance trap of mixing NumPy and MLX operations.
 
 For common PyTorch/NumPy habits that silently break in MLX, see
 [references/anti-patterns.md](references/anti-patterns.md).

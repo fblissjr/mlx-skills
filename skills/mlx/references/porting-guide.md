@@ -1,4 +1,4 @@
-last updated: 2026-02-28
+last updated: 2026-03-08
 
 # Porting from PyTorch to MLX
 
@@ -436,6 +436,111 @@ They serve the same purpose but work differently:
 - `mx.compile` requires pure functions (no `mx.eval`, no print, no side effects)
 - Varying Python scalar inputs to `mx.compile` cause recompilation -- wrap in
   `mx.array` to avoid this
+
+## Porting from NumPy
+
+NumPy code mixed with MLX is the most common performance trap. Every boundary
+crossing forces synchronization and data copies, defeating MLX's lazy evaluation.
+
+### The Performance Trap
+
+```python
+# BAD: converting back and forth in a loop
+for batch in data:
+    x = mx.array(np.array(batch))  # Copy to MLX
+    result = model(x)
+    output = np.array(result)      # Copy back to NumPy -- forces sync!
+
+# GOOD: convert once at the data boundary, stay in MLX
+for batch in data:
+    x = mx.array(batch)  # Convert once
+    result = model(x)
+    mx.eval(result)      # Explicit eval at iteration boundary
+```
+
+### Data Boundary Pattern
+
+Convert NumPy data to MLX arrays once at the boundary, then operate entirely
+in MLX:
+
+```python
+# Load data as NumPy (fine -- this is the boundary)
+np_data = np.load("data.npy")
+
+# Convert once
+mx_data = mx.array(np_data)
+
+# All computation stays in MLX
+output = model(mx_data)
+mx.eval(output)
+
+# Convert back to NumPy only at the end (for saving, plotting, etc.)
+result = np.array(output)
+```
+
+### NumPy-to-MLX API Mapping
+
+Most NumPy operations have direct MLX equivalents:
+
+| NumPy | MLX |
+|-------|-----|
+| `np.array(data)` | `mx.array(data)` |
+| `np.zeros(shape)` | `mx.zeros(shape)` |
+| `np.ones(shape)` | `mx.ones(shape)` |
+| `np.arange(n)` | `mx.arange(n)` |
+| `np.linspace(a, b, n)` | `mx.linspace(a, b, n)` |
+| `np.concatenate(arrays, axis)` | `mx.concatenate(arrays, axis)` |
+| `np.stack(arrays, axis)` | `mx.stack(arrays, axis)` |
+| `np.split(x, n, axis)` | `mx.split(x, n, axis)` |
+| `np.reshape(x, shape)` | `mx.reshape(x, shape)` |
+| `np.transpose(x, axes)` | `mx.transpose(x, axes)` |
+| `np.expand_dims(x, axis)` | `mx.expand_dims(x, axis)` |
+| `np.squeeze(x, axis)` | `mx.squeeze(x, axis)` |
+| `np.mean(x, axis)` | `mx.mean(x, axis)` |
+| `np.sum(x, axis)` | `mx.sum(x, axis)` |
+| `np.max(x, axis)` | `mx.max(x, axis)` |
+| `np.min(x, axis)` | `mx.min(x, axis)` |
+| `np.argmax(x, axis)` | `mx.argmax(x, axis)` |
+| `np.where(cond, a, b)` | `mx.where(cond, a, b)` |
+| `np.clip(x, a, b)` | `mx.clip(x, a, b)` |
+| `np.matmul(a, b)` | `mx.matmul(a, b)` |
+| `np.linalg.norm(x)` | `mx.linalg.norm(x)` |
+| `np.random.randn(*shape)` | `mx.random.normal(shape=shape)` |
+| `np.random.rand(*shape)` | `mx.random.uniform(shape=shape)` |
+| `np.random.randint(low, high, size)` | `mx.random.randint(low, high, shape=size)` |
+| `np.exp(x)` | `mx.exp(x)` |
+| `np.log(x)` | `mx.log(x)` |
+| `np.sqrt(x)` | `mx.sqrt(x)` |
+| `np.abs(x)` | `mx.abs(x)` |
+| `np.einsum(eq, *arrays)` | `mx.einsum(eq, *arrays)` |
+| `np.triu(x, k)` | `mx.triu(x, k)` |
+| `np.sort(x, axis)` | `mx.sort(x, axis)` |
+
+### NumPy Patterns That Need Rethinking
+
+**float64**: NumPy defaults to float64; MLX does not support float64 on GPU.
+Use float32 as the highest precision.
+
+```python
+# NumPy: float64 by default
+x = np.array([1.0, 2.0])  # float64
+
+# MLX: float32 is the default and highest GPU precision
+x = mx.array([1.0, 2.0])  # float32
+```
+
+**In-place mutation**: NumPy arrays are mutable; MLX arrays are immutable graph
+nodes. `x[i] = v` creates a new graph node, not a mutation.
+
+**Fancy indexing**: NumPy's advanced integer indexing is less efficient in MLX.
+Use `mx.take_along_axis` instead.
+
+**Eager assumptions**: NumPy executes immediately; MLX is lazy. Code that
+inspects intermediate values (e.g., `if x.mean() > threshold:`) forces
+evaluation. Restructure to avoid data-dependent control flow in hot paths.
+
+**Structured arrays / complex128**: Not supported in MLX. Use separate arrays
+for structured data and complex64 for complex numbers.
 
 ## Checklist
 

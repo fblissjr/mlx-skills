@@ -12,6 +12,7 @@ OpenCode. Skills are markdown files with YAML frontmatter in the top-level
 | I want to... | Use | Command |
 |--------------|-----|---------|
 | Port PyTorch code to MLX | mlx | `/mlx-skills:mlx` |
+| Port NumPy code to MLX | mlx | `/mlx-skills:mlx` |
 | Write a custom MLX model | mlx | `/mlx-skills:mlx` |
 | Learn MLX fundamentals | mlx | `/mlx-skills:mlx` |
 | Write a training loop | mlx | `/mlx-skills:mlx` |
@@ -24,6 +25,8 @@ OpenCode. Skills are markdown files with YAML frontmatter in the top-level
 | Reduce memory usage | fast-mlx | `/mlx-skills:fast-mlx` |
 | Profile performance | fast-mlx | `/mlx-skills:fast-mlx` |
 | Update skills from upstream | update-skills | `/update-skills` |
+| Verify content accuracy | review-content | `/review-content` |
+| Bump version everywhere | sync-versions | `/sync-versions 0.5.3` |
 
 ## Skills and When They Load
 
@@ -44,7 +47,8 @@ pytorch", "training loop", writing/debugging MLX code.
 - From other skills: "For core MLX concepts, load the mlx skill"
 
 **What it covers:** lazy evaluation, unified memory, compile, nn.Module system,
-layers, optimizers, training patterns, debugging, PyTorch-to-MLX porting.
+layers, optimizers, training patterns, debugging, PyTorch-to-MLX and
+NumPy-to-MLX porting.
 
 ### mlx-lm (language models)
 
@@ -87,6 +91,12 @@ memory management, profiling, LLM/diffusion-specific optimization.
 3. Reference `anti-patterns.md` for PyTorch habits that break in MLX
 4. Reference `nn-and-training.md` for MLX layer equivalents
 
+### "Port my NumPy code to MLX"
+1. `/mlx` loads core skill with NumPy porting mention
+2. Reference `porting-guide.md` for NumPy-to-MLX API mapping, data boundary
+   pattern, and patterns that need rethinking
+3. Reference `anti-patterns.md` for "Mixing NumPy and MLX" performance trap
+
 ### "Optimize my MLX project"
 1. Claude scans imports for `import mlx`, `from mlx_lm import`, etc.
 2. Loads `mlx` skill for core patterns
@@ -125,6 +135,18 @@ memory management, profiling, LLM/diffusion-specific optimization.
 3. Analyzes diffs, routes changes to the right reference files
 4. Updates reference files (not SKILL.md), validates, and reports
 
+### "Check content accuracy" (maintainer)
+1. `/review-content` loads the content accuracy checker
+2. Parses reference files for documented APIs, CLI flags, signatures
+3. Fetches upstream source for comparison
+4. Reports mismatches -- does not auto-fix
+
+### "Bump project version" (maintainer)
+1. `/sync-versions 0.5.3` loads the version coordinator
+2. Updates version in all 5 locations (pyproject.toml, 3 SKILL.md, plugin.json)
+3. Updates `last_verified` dates, adds CHANGELOG section header
+4. Runs validator and tests to confirm
+
 ## Development
 
 ### Key files
@@ -138,6 +160,7 @@ memory management, profiling, LLM/diffusion-specific optimization.
 - `mlx_skills/validate.py` -- validation (`mlx-skills-validate` entrypoint)
 - `mlx_skills/skills` -- symlink to `../skills` (pip distribution compat)
 - `scripts/check_updates.py` -- upstream change scanner
+- `.claude/skills/` -- project-level maintainer skills (not part of plugin)
 - `tests/` -- pytest suite
 
 ### Commands
