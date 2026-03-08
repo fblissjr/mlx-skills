@@ -249,3 +249,76 @@ mlx-vlm is third-party code. When using its patterns:
 - Check that KV cache usage follows the standard pattern
 - Confirm fast ops are used where appropriate
 - Watch for type promotion issues in the vision encoder
+
+## CLI Subcommand Reference
+
+mlx-lm provides 17 CLI subcommands via `mlx_lm.<command>` or `python -m mlx_lm <command>`:
+
+| Command | Description |
+|---------|-------------|
+| `generate` | Generate text from a prompt |
+| `chat` | Interactive chat session |
+| `lora` | Fine-tune with LoRA/DoRA adapters |
+| `server` | OpenAI-compatible HTTP server |
+| `convert` | Convert HuggingFace models to MLX format |
+| `fuse` | Fuse LoRA/DoRA adapters into base model weights |
+| `benchmark` | Benchmark model inference speed |
+| `cache_prompt` | Pre-compute and save prompt KV cache |
+| `evaluate` | Evaluate model on datasets |
+| `perplexity` | Compute perplexity on text |
+| `manage` | Manage downloaded models (list, delete) |
+| `upload` | Upload model to HuggingFace Hub |
+| `share` | Share model via HuggingFace Hub |
+| `awq` | Activation-aware weight quantization |
+| `dwq` | Data-aware weight quantization |
+| `dynamic_quant` | Dynamic per-token quantization |
+| `gptq` | GPTQ quantization |
+
+Quantization subcommands (`awq`, `dwq`, `dynamic_quant`, `gptq`) live in the
+`mlx_lm.quant` subpackage.
+
+For detailed usage of any command: `mlx_lm.<command> --help`
+
+## Quantization Techniques
+
+| Technique | CLI | Description |
+|-----------|-----|-------------|
+| Standard | `mlx_lm.convert --quantize` | Simple 4/8-bit weight quantization via `nn.QuantizedLinear` |
+| AWQ | `mlx_lm.awq` | Activation-aware: calibrates scales using activation statistics |
+| GPTQ | `mlx_lm.gptq` | Post-training quantization using calibration data and Hessian approximation |
+| DWQ | `mlx_lm.dwq` | Data-aware weight quantization |
+| Dynamic | `mlx_lm.dynamic_quant` | Per-token dynamic quantization |
+| Mixed | via config | Mixed precision recipes: `mixed_2_6` (2-bit + 6-bit), `mixed_3_4` (3-bit + 4-bit), etc. |
+
+Standard quantization is the most common and is applied during `convert`. AWQ
+and GPTQ produce higher quality at the same bit width but require calibration
+data. Mixed quantization assigns different bit widths to different layers based
+on sensitivity.
+
+## Tool Calling
+
+mlx-lm's server supports function/tool calling via model-specific parsers:
+
+| Parser | Models |
+|--------|--------|
+| `mistral` | Mistral models |
+| `pythonic` | Models using Python-style tool calls |
+| `glm47` | GLM-4.7 |
+| `kimi_k2` | Kimi K2 |
+| `longcat` | LongCat models |
+| `minimax_m2` | MiniMax M2 |
+| `qwen3_coder` | Qwen3-Coder |
+| `function_gemma` | Gemma function calling |
+| `json_tools` | JSON-based tool calling |
+
+Each parser implements `parse_tool_call(text, tools)` to extract structured
+function calls from model output. Chat templates in `mlx_lm/chat_templates/`
+handle tool message formatting.
+
+Server usage:
+```bash
+mlx_lm.server --model MODEL --tool-parser mistral
+```
+
+The `--tool-parser` flag selects the parser. Tools are passed in the standard
+OpenAI format in `/v1/chat/completions` requests.

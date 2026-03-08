@@ -325,3 +325,60 @@ print(f"Peak memory: {mx.metal.get_peak_memory() / 1e9:.2f} GB")
 print(f"Active: {mx.metal.get_active_memory() / 1e9:.2f} GB")
 print(f"Cache: {mx.metal.get_cache_memory() / 1e9:.2f} GB")
 ```
+
+## Benchmarking Recipes
+
+### Model Inference Benchmark
+
+```python
+import time
+import mlx.core as mx
+
+def benchmark_model(model, input_shape, warmup=5, iterations=50):
+    x = mx.random.uniform(shape=input_shape)
+    mx.eval(x)
+
+    # Warmup
+    for _ in range(warmup):
+        out = model(x)
+        mx.eval(out)
+
+    # Benchmark
+    mx.metal.reset_peak_memory()
+    tic = time.perf_counter()
+    for _ in range(iterations):
+        out = model(x)
+        mx.eval(out)
+    toc = time.perf_counter()
+
+    ms = 1e3 * (toc - tic) / iterations
+    peak_mb = mx.metal.get_peak_memory() / 1e6
+    print(f"{ms:.2f} ms/iter, peak memory: {peak_mb:.1f} MB")
+    return ms
+```
+
+### Comparing Before/After Optimization
+
+```python
+def compare(fn_before, fn_after, *args, warmup=10, iterations=100):
+    t_before = benchmark(fn_before, *args, warmup=warmup, iterations=iterations)
+    t_after = benchmark(fn_after, *args, warmup=warmup, iterations=iterations)
+    speedup = t_before / t_after
+    print(f"Before: {t_before:.2f} ms, After: {t_after:.2f} ms, Speedup: {speedup:.2f}x")
+```
+
+### Token Generation Throughput
+
+```python
+def benchmark_generation(model, tokenizer, prompt, max_tokens=100):
+    from mlx_lm import stream_generate
+
+    tokens = []
+    tic = time.perf_counter()
+    for response in stream_generate(model, tokenizer, prompt, max_tokens=max_tokens):
+        tokens.append(response.token)
+    toc = time.perf_counter()
+
+    tok_per_sec = len(tokens) / (toc - tic)
+    print(f"{tok_per_sec:.1f} tok/s ({len(tokens)} tokens in {toc-tic:.2f}s)")
+```

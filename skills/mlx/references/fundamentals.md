@@ -398,3 +398,171 @@ x[0] = 1.0  # Creates a new computation node
 
 Note: "in-place" updates like `x[i] = v` actually create new graph nodes. They
 work correctly but do not save memory the way true in-place operations would.
+
+## mx.fast Complete API
+
+### rms_norm
+
+```python
+mx.fast.rms_norm(x, weight, eps, *, stream=None) -> array
+```
+
+Root Mean Square normalization over the last axis. `weight` is optional (pass
+`None` to skip scaling). Accumulates in higher precision internally -- do not
+manually upcast.
+
+### layer_norm
+
+```python
+mx.fast.layer_norm(x, weight, bias, eps, *, stream=None) -> array
+```
+
+Layer normalization over the last axis. Both `weight` and `bias` are optional.
+Accumulates in higher precision internally.
+
+### rope
+
+```python
+mx.fast.rope(a, dims, *, traditional, base, scale, offset, freqs=None, stream=None) -> array
+```
+
+Rotary position embedding.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `a` | array | Input, shape `(..., L, D)` |
+| `dims` | int | Feature dimensions to rotate. If < D, only first `dims` are rotated |
+| `traditional` | bool | `True` for the original RoPE formulation, `False` for the GPT-NeoX variant |
+| `base` | float or None | Angular frequency base. Exactly one of `base` and `freqs` must be `None` |
+| `scale` | float | Scale for positions (default 1.0) |
+| `offset` | int or array | Position offset. Can be a scalar or `(B,)` array for per-batch offsets |
+| `freqs` | array or None | Custom frequency table (used by Llama3RoPE, YarnRoPE, etc.) |
+
+### scaled_dot_product_attention
+
+```python
+mx.fast.scaled_dot_product_attention(q, k, v, *, scale, mask=None, sinks=None, stream=None) -> array
+```
+
+Fast multi-head attention: `O = softmax(Q @ K.T * scale) @ V`.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `q` | array | Queries, shape `(B, N_q, T_q, D)` |
+| `k` | array | Keys, shape `(B, N_kv, T_kv, D)` |
+| `v` | array | Values, shape `(B, N_kv, T_kv, D)` |
+| `scale` | float | Typically `1.0 / sqrt(D)` |
+| `mask` | None, str, or array | `None` (no mask), `"causal"` (fast-path lower-right causal), or additive mask `(B, N, T_q, T_kv)` |
+| `sinks` | array or None | Attention sink scores for rotating caches with `keep` tokens |
+
+Supports MHA, GQA, and MQA -- do not pre-tile K/V for GQA. Softmax computed in
+float32 regardless of input dtype.
+
+## Device and Stream API
+
+| Function | Description |
+|----------|-------------|
+| `mx.Device` | Device object (`mx.cpu`, `mx.gpu`) |
+| `mx.Stream` | Stream object for ordering operations |
+| `mx.default_device()` | Get the default device |
+| `mx.set_default_device(device)` | Set the default device |
+| `mx.default_stream(device)` | Get the default stream for a device |
+| `mx.new_stream(device)` | Create a new stream on a device |
+| `mx.set_default_stream(stream)` | Set the default stream |
+| `mx.stream(s)` | Context manager to route ops to stream `s` |
+| `mx.synchronize(stream=None)` | Wait for all work (or work on a specific stream) |
+| `mx.device_count(kind)` | Count available devices of a kind |
+| `mx.device_info()` | Dict with device info including `max_recommended_working_set_size` |
+
+## Additional Transforms
+
+### Forward-Mode Autodiff (JVP)
+
+```python
+out, tangent_out = mx.jvp(fn, primals, tangents)
+```
+
+Computes the Jacobian-vector product (forward-mode). Returns the function output
+and the tangent of the output. Useful for directional derivatives.
+
+### Reverse-Mode Autodiff (VJP)
+
+```python
+out, vjp_fn = mx.vjp(fn, primals, cotangents)
+```
+
+Computes the vector-Jacobian product (reverse-mode). Lower-level than `mx.grad`
+-- use when you need explicit control over the backward pass.
+
+### Custom Functions
+
+```python
+@mx.custom_function
+def my_fn(x):
+    return forward_result
+
+@my_fn.vjp
+def my_fn_vjp(primals, cotangent, output):
+    return (grad_x,)
+```
+
+Define custom forward and backward passes. Pair with `mx.fast.metal_kernel` to
+write GPU-accelerated ops with differentiable gradients. See
+[references/custom-kernels.md](../references/custom-kernels.md).
+
+### Compile Control
+
+```python
+mx.disable_compile()  # Globally disable compilation (for debugging)
+mx.enable_compile()   # Re-enable compilation
+```
+
+Or set the environment variable `MLX_DISABLE_COMPILE=1`.
+
+## Distributed API
+
+MLX supports distributed communication via `mx.distributed`:
+
+| Function | Description |
+|----------|-------------|
+| `mx.distributed.init()` | Initialize and return the global communication group |
+| `mx.distributed.is_available()` | Check if distributed backend is available |
+| `group.size()` | Number of processes in the group |
+| `group.rank()` | Rank of the current process |
+| `mx.distributed.all_sum(x, group)` | Sum across all processes |
+| `mx.distributed.all_gather(x, group)` | Gather arrays from all processes |
+| `mx.distributed.send(x, dst, group)` | Send to a specific rank |
+| `mx.distributed.recv(shape, dtype, src, group)` | Receive from a specific rank |
+
+## Quantization
+
+### nn.quantize
+
+```python
+nn.quantize(model, group_size=64, bits=4, class_predicate=None)
+```
+
+Quantize model weights in-place. Replaces `nn.Linear` layers with
+`nn.QuantizedLinear`. The `class_predicate` function controls which layers to
+quantize (default: all `nn.Linear` and `nn.Embedding` layers).
+
+```python
+# Quantize all linear layers to 4-bit
+nn.quantize(model)
+
+# Quantize only layers matching a predicate
+nn.quantize(model, bits=8, class_predicate=lambda p, m: isinstance(m, nn.Linear) and "lm_head" not in p)
+```
+
+## Memory Management Complete API
+
+| Function | Description |
+|----------|-------------|
+| `mx.metal.get_active_memory()` | Currently allocated bytes |
+| `mx.metal.get_peak_memory()` | Peak allocation since last reset |
+| `mx.metal.reset_peak_memory()` | Reset peak memory counter |
+| `mx.metal.get_cache_memory()` | Cached (freed but held) bytes |
+| `mx.metal.set_memory_limit(n)` | Soft limit; allocations beyond this may fail or page |
+| `mx.metal.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
+| `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents paging for large models) |
+| `mx.clear_cache()` | Release all cached buffers back to the system |

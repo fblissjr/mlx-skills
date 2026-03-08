@@ -294,3 +294,124 @@ If GPU utilization is good, a good next step is to figure out which operations
 are taking up so much time. One way to do this is with the Metal debugger. For
 that, see the documentation on profiling MLX with the Metal debugger:
 https://ml-explore.github.io/mlx/build/html/dev/metal_debugger.html
+
+### Metal Debugger Profiling
+
+For GPU-level profiling, use Metal's capture API:
+
+```python
+import mlx.core as mx
+
+# Prerequisite: run with MTL_CAPTURE_ENABLED=1
+# MTL_CAPTURE_ENABLED=1 python my_script.py
+
+a = mx.random.uniform(shape=(512, 512))
+b = mx.random.uniform(shape=(512, 512))
+mx.eval(a, b)
+
+# Capture a GPU trace
+mx.metal.start_capture("mlx_trace.gputrace")
+
+for _ in range(10):
+    mx.eval(mx.add(a, b))
+
+mx.metal.stop_capture()
+```
+
+Open the `.gputrace` file in Xcode to inspect:
+- The Dependencies view shows all operations and their execution timeline
+- Individual kernel execution times and resource usage
+- Memory allocation patterns
+
+For source-level Metal debugging, build MLX with `CMAKE_ARGS="-DMLX_METAL_DEBUG=ON"`
+to enable source recording and labeled Metal objects.
+
+### Benchmarking Methodology
+
+Correct benchmarking in MLX requires attention to lazy evaluation and compilation:
+
+```python
+import time
+import mlx.core as mx
+
+def benchmark(fn, *args, warmup=10, iterations=100):
+    # Warmup: triggers compilation and fills caches
+    for _ in range(warmup):
+        result = fn(*args)
+        mx.eval(result)
+
+    # Timed runs
+    tic = time.perf_counter()
+    for _ in range(iterations):
+        result = fn(*args)
+        mx.eval(result)  # Synchronize before timing
+    toc = time.perf_counter()
+
+    ms_per_iter = 1e3 * (toc - tic) / iterations
+    return ms_per_iter
+```
+
+Common mistakes:
+- **Missing warmup**: First calls include compilation overhead
+- **Missing mx.eval**: Without sync, you time graph construction, not computation
+- **Including mx.eval overhead**: The eval call itself has dispatch overhead;
+  benchmarking very fast ops will be dominated by this overhead
+- **Timing compilation**: If shapes/types change between iterations, you time
+  recompilation instead of execution
+
+### Compile State Capture for Training
+
+When compiling a training step, model and optimizer state must be captured as
+both inputs and outputs:
+
+```python
+from functools import partial
+
+state = [model.state, optimizer.state]
+
+@partial(mx.compile, inputs=state, outputs=state)
+def step(x, y):
+    loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
+    loss, grads = loss_and_grad_fn(model, x, y)
+    optimizer.update(model, grads)
+    return loss
+
+for x, y in dataset:
+    loss = step(x, y)
+    mx.eval(state)
+```
+
+The `inputs=state` tells compile to track changes to the state containers.
+The `outputs=state` tells compile to capture any state mutations as outputs.
+Without these, the compiled function treats state as constant and produces
+wrong results after the first call.
+
+If your model uses `nn.Dropout` or other random layers, also include
+`mx.random.state` in the state list:
+```python
+state = [model.state, optimizer.state, mx.random.state]
+```
+
+### Complete Memory Management API
+
+| Function | Description |
+|----------|-------------|
+| `mx.metal.get_active_memory()` | Currently allocated bytes on GPU |
+| `mx.metal.get_peak_memory()` | Peak allocation since last reset |
+| `mx.metal.reset_peak_memory()` | Reset the peak memory counter |
+| `mx.metal.get_cache_memory()` | Bytes cached (freed but held for reuse) |
+| `mx.metal.set_memory_limit(n)` | Soft limit on total GPU memory allocation |
+| `mx.metal.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
+| `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents OS paging) |
+| `mx.clear_cache()` | Release all cached buffers back to the system |
+
+**set_memory_limit vs set_cache_limit**:
+- `set_memory_limit(n)`: Controls the total memory MLX can allocate. Allocations
+  beyond this limit use the cache or may fail. Use this to prevent MLX from
+  consuming all system memory.
+- `set_cache_limit(n)`: Controls how much freed memory MLX holds for reuse.
+  Reducing this returns memory to the system sooner but may cause more
+  allocations. Use this when other processes need memory.
+- `set_wired_limit(n)`: Pins memory so the OS cannot page it out. Use for
+  large model weights that must stay resident. Set to
+  `mx.device_info()["max_recommended_working_set_size"]` for maximum pinning.

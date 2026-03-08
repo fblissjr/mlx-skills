@@ -664,3 +664,112 @@ for x, y in dataset:
 Key: `grads` is released before evaluation (function scope), reducing peak
 memory. The `mx.eval` call evaluates both model params and optimizer state
 together for efficiency.
+
+## Prompt Caching
+
+### Building and Saving Prompt Caches
+
+Pre-compute the KV cache for a prompt prefix and save it for reuse:
+
+```python
+from mlx_lm.models.cache import make_prompt_cache, save_prompt_cache, load_prompt_cache
+
+model, tokenizer = load("mlx-community/Llama-3.2-3B-Instruct-4bit")
+
+# Create cache (delegates to model.make_cache() if available)
+cache = make_prompt_cache(model, max_kv_size=None)
+
+# Process the prompt through the model to populate the cache
+prompt_tokens = mx.array(tokenizer.encode("System prompt here..."))
+for response in generate_step(prompt_tokens, model, max_tokens=0, prompt_cache=cache):
+    pass  # Just populating the cache, not generating
+
+# Save cache with metadata
+save_prompt_cache("system_cache.safetensors", cache, metadata={"model": "..."})
+
+# Later: reload the cache
+cache = load_prompt_cache("system_cache.safetensors")
+# Continue generating with the pre-populated cache
+```
+
+`make_prompt_cache()` delegates to `model.make_cache()` if the model defines it,
+otherwise creates `KVCache()` per layer (or `RotatingKVCache` if `max_kv_size`
+is specified). Cache files use safetensors format with metadata including cache
+class names for correct reconstruction.
+
+## Sampling Details
+
+### make_sampler
+
+```python
+from mlx_lm.sample_utils import make_sampler
+
+sampler = make_sampler(
+    temp=0.7,           # 0 = argmax (greedy)
+    top_p=0.9,          # Nucleus sampling threshold
+    min_p=0.0,          # Minimum probability (scaled by top token)
+    top_k=0,            # Top-k filtering (0 = disabled)
+    xtc_probability=0.0,  # XTC sampling probability
+    xtc_threshold=0.0,    # XTC threshold
+    xtc_special_tokens=[], # Token IDs excluded from XTC
+)
+```
+
+Samplers are composable -- they chain in order: top-p, min-p, XTC, top-k, then
+categorical sampling at the specified temperature.
+
+### make_logits_processors
+
+```python
+from mlx_lm.sample_utils import make_logits_processors
+
+processors = make_logits_processors(
+    logit_bias=None,            # Dict[int, float] additive bias per token
+    repetition_penalty=1.2,     # Penalty factor for repeated tokens
+    repetition_context_size=20, # Number of recent tokens to penalize
+)
+```
+
+Logits processors run before sampling. Repetition penalty scales logits: tokens
+with negative logits are multiplied by the penalty, tokens with positive logits
+are divided by it.
+
+### XTC Sampling
+
+XTC (extended temperature-controlled) sampling works by:
+1. Computing softmax probabilities from logits
+2. Identifying tokens above `xtc_threshold`
+3. With probability `xtc_probability`, masking those tokens to `-inf`
+4. Special tokens (by ID) are excluded from masking
+
+Use XTC for more creative/diverse outputs while maintaining coherence.
+
+## DoRA Pattern
+
+DoRA (Weight-Decomposed Low-Rank Adaptation) decomposes weight updates into
+magnitude and direction components:
+
+```python
+from mlx_lm.tuner.dora import DoRALinear, DoRAEmbedding
+
+# Wrap existing layers
+dora_layer = DoRALinear.from_base(linear_layer, r=8, dropout=0.0, scale=20.0)
+dora_embed = DoRAEmbedding.from_base(embedding_layer, r=8)
+```
+
+Key differences from LoRA:
+- Learns a magnitude vector `m` per output dimension
+- Forward pass: computes adapted weight norm, scales output by `m / norm`
+- `mx.stop_gradient` on the norm prevents gradient flow through normalization
+- Generally better quality than LoRA at same rank, but slightly slower
+
+Configuration in training config:
+```json
+{
+  "fine_tune_type": "dora",
+  "rank": 8,
+  "scale": 20.0
+}
+```
+
+Both `DoRALinear.fuse()` and `DoRAEmbedding.fuse()` merge weights back for inference.

@@ -183,6 +183,9 @@ out = torch.matmul(attn, v)
 
 ```python
 # MLX -- use the fused op instead of manual implementation
+# Full signature: scaled_dot_product_attention(q, k, v, *, scale, mask=None, sinks=None)
+# q/k/v shape: (B, N_heads, T, D). mask: None, "causal", or array (B, N, T_q, T_kv)
+# GQA: N_kv < N_q is handled automatically -- do NOT pre-tile k/v
 out = mx.fast.scaled_dot_product_attention(q, k, v, scale=scale, mask=mask)
 ```
 
