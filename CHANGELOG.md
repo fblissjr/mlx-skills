@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.5.1
+
+### Added
+
+- Authority preambles in all three SKILL.md files ("do not search the web")
+  to prevent Claude from web-searching after skills load
+- `skills/mlx/references/custom-kernels.md`: Metal and CUDA custom kernel
+  guide with `mx.fast.metal_kernel`, `mx.fast.cuda_kernel`, atomic outputs,
+  strided inputs, and `mx.custom_function` pairing
+- `skills/mlx-lm/references/cli-reference.md`: complete CLI reference for
+  all 17 mlx_lm subcommands
+- mlx skill: mx.fast full function signatures with parameter tables, Device
+  and Stream API reference, additional transforms (jvp, vjp, custom_function,
+  disable_compile/enable_compile), expanded distributed API (send, recv,
+  all_gather, is_available), nn.quantize API, complete memory management API
+- mlx-lm skill: prompt caching API (make_prompt_cache, save_prompt_cache,
+  load_prompt_cache), sampling details (make_sampler, make_logits_processors,
+  XTC algorithm, repetition penalty), DoRA pattern with config, quantization
+  techniques comparison (AWQ/GPTQ/DWQ/mixed), tool calling parsers table,
+  CLI subcommand reference table
+- fast-mlx skill: Metal debugger profiling (start_capture/stop_capture),
+  benchmarking methodology guide, compile state capture for training loops
+  (inputs=/outputs= params), complete memory management API with
+  set_memory_limit vs set_cache_limit explanation, benchmarking recipes
+
+### Changed
+
+- Reference section headings in all SKILL.md files changed from "loaded on
+  demand -- not in context until you open them" to "read before answering --
+  complete details inside"
+- Remember sections in all SKILL.md files now include "Read reference files
+  first -- do not search the web"
+- mlx SKILL.md mx.fast table expanded with full signatures, metal_kernel,
+  and cuda_kernel entries
+- mlx SKILL.md transforms table expanded with jvp, vjp, custom_function,
+  disable_compile/enable_compile
+- mlx-lm SKILL.md feature list expanded with prompt caching, tool calling,
+  17 CLI subcommands, and AWQ/GPTQ/DWQ quantization
+- Porting guide SDPA example annotated with full signature and GQA note
+
 ## 0.5.0
 
 ### Added
