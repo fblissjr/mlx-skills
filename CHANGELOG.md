@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.5.3
+
+### Added
+
+- New `mlx-cuda` skill: separate skill for CUDA backend support on NVIDIA GPUs
+  with backend detection, custom CUDA kernels (`cuda_kernel`,
+  `precompiled_cuda_kernel`), and Metal-to-CUDA kernel migration guide
+- `mx.linalg` section in fundamentals.md: 17 linear algebra functions (qr, svd,
+  inv, pinv, cholesky, lu, eig, eigh, solve, cross, etc.)
+- Function export/import section in fundamentals.md: `export_function`,
+  `import_function`, `exporter` context manager, `export_to_dot` visualization
+- FP8 quantization section in fundamentals.md: `mx.to_fp8`, `mx.from_fp8`,
+  `mx.qqmm`, `mx.gather_qmm`, `mx.segmented_mm`
+- Type inspection utilities in fundamentals.md: `mx.finfo`, `mx.iinfo`,
+  `mx.issubdtype`
+- Random distributions table in fundamentals.md: 10 distributions including
+  `multivariate_normal`, `gumbel`, `laplace`, `permutation`, `categorical`
+- Additional array operations table in fundamentals.md: `topk`, `median`,
+  `cummax`, `cummin`, `logcumsumexp`, `unflatten`, `hadamard_transform`,
+  `contiguous`, `as_strided`, `convolve`, `depends`, `view`, `kron`
+- Missing distributed ops: `recv_like`, `sum_scatter`
+- Missing memory API entries: `mx.metal.is_available()`,
+  `mx.metal.clear_cache()`, `mx.metal.device_info()`
+- `mx.fft` namespace in fundamentals.md: 14 FFT functions (fft, ifft, fft2,
+  fftn, rfft, irfft, fftshift, etc.) with usage examples
+- `sum_scatter` expanded documentation with pipeline parallelism pattern
+- FFT mappings in porting-guide.md for both NumPy and PyTorch
+- PyTorch porting mappings: `topk`, `median`, `cumsum`, `linalg.solve`,
+  `linalg.eigh`, `linalg.svd`, `linalg.inv`, `linalg.cholesky`
+- NumPy porting mappings: 23 additional operations including `argsort`,
+  `median`, `cumsum`, `cumprod`, `pad`, `roll`, `repeat`, `meshgrid`,
+  `convolve`, all linalg functions, and additional random distributions
+
+### Changed
+
+- Separated CUDA content from Metal content: removed cuda_kernel from
+  custom-kernels.md (now Metal-only), removed CUDA references from mlx
+  SKILL.md mx.fast table
+- custom-kernels.md renamed to "Custom Metal Kernels" with cross-reference
+  to mlx-cuda skill
+- Type table updated: added `float64` (CPU only), `uint64`, clarified GPU
+  limitations
+
 ## 0.5.2
 
 ### Fixed

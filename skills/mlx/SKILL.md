@@ -15,7 +15,7 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.2
+  version: 0.5.3
   last_verified: "2026-03-08"
 ---
 
@@ -96,7 +96,6 @@ promotion rules, see [references/fundamentals.md](references/fundamentals.md).
 | `mx.fast.rope` | `rope(a, dims, *, traditional, base, scale, offset, freqs=None)` | Manual rotary position embedding |
 | `mx.fast.scaled_dot_product_attention` | `scaled_dot_product_attention(q, k, v, *, scale, mask=None, sinks=None)` | Manual attention computation |
 | `mx.fast.metal_kernel` | `metal_kernel(name, input_names, output_names, source, ...)` | Custom Metal GPU kernels |
-| `mx.fast.cuda_kernel` | `cuda_kernel(name, input_names, output_names, source, ...)` | Custom CUDA GPU kernels |
 
 `weight`, `bias` are optional (`None` = skip). Both norm ops accumulate in higher
 precision internally. `mask` accepts `None`, `"causal"` string (fast path), or an
@@ -173,7 +172,7 @@ profiling and optimization guides.
 - [references/debugging.md](references/debugging.md) -- Shape debugging,
   evaluation issues, memory profiling, common errors
 - [references/custom-kernels.md](references/custom-kernels.md) -- Writing custom
-  Metal and CUDA kernels with mx.fast.metal_kernel / mx.fast.cuda_kernel
+  Metal kernels with mx.fast.metal_kernel
 
 ## Related Skills
 
@@ -181,6 +180,7 @@ profiling and optimization guides.
   quantization, LoRA fine-tuning, server
 - **`fast-mlx`** -- Performance optimization: profiling, compilation tuning,
   memory reduction, async pipeline optimization
+- **`mlx-cuda`** -- CUDA backend support for running MLX on NVIDIA GPUs
 
 ## Remember
 

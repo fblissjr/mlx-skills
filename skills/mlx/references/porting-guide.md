@@ -148,6 +148,12 @@ MLX uses unified memory. Arrays are always accessible by both CPU and GPU.
 | `torch.inf` | `float("inf")` |
 | `x.masked_fill(mask, val)` | `mx.where(mask, val, x)` (note: args reversed) |
 | `F.softmax(x, dim=-1)` | `mx.softmax(x, axis=-1)` |
+| `torch.topk(x, k, dim)` | `mx.topk(x, k, axis)` |
+| `torch.median(x, dim)` | `mx.median(x, axis)` |
+| `torch.cumsum(x, dim)` | `mx.cumsum(x, axis)` |
+
+`torch.linalg.*` and `torch.fft.*` map directly to `mx.linalg.*` and
+`mx.fft.*` with identical signatures (use `axis` instead of `dim`).
 
 ### Handle in-place operations
 
@@ -515,6 +521,19 @@ Most NumPy operations have direct MLX equivalents:
 | `np.einsum(eq, *arrays)` | `mx.einsum(eq, *arrays)` |
 | `np.triu(x, k)` | `mx.triu(x, k)` |
 | `np.sort(x, axis)` | `mx.sort(x, axis)` |
+| `np.argsort(x, axis)` | `mx.argsort(x, axis)` |
+| `np.median(x, axis)` | `mx.median(x, axis)` |
+| `np.cumsum(x, axis)` | `mx.cumsum(x, axis)` |
+| `np.cumprod(x, axis)` | `mx.cumprod(x, axis)` |
+| `np.pad(x, pad_width)` | `mx.pad(x, pad_width)` |
+| `np.roll(x, shift, axis)` | `mx.roll(x, shift, axis)` |
+| `np.repeat(x, repeats, axis)` | `mx.repeat(x, repeats, axis)` |
+| `np.convolve(a, v, mode)` | `mx.convolve(a, v, mode)` |
+| `np.random.laplace(loc, scale, size)` | `mx.random.laplace(shape=size, loc=loc, scale=scale)` |
+
+`np.linalg.*`, `np.fft.*`, and most remaining `np.*` operations (`meshgrid`,
+`random.permutation`, `random.multivariate_normal`) map directly to `mx.*`
+with identical signatures.
 
 ### NumPy Patterns That Need Rethinking
 

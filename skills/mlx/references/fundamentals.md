@@ -1,4 +1,4 @@
-last updated: 2026-02-23
+last updated: 2026-03-08
 
 # MLX Fundamentals
 
@@ -87,16 +87,8 @@ same physical memory through a shared address space. MLX leverages this:
 ### Memory Management
 
 MLX caches recently freed memory buffers for reuse rather than returning them
-to the system:
-
-```python
-mx.metal.get_active_memory()   # Currently allocated bytes
-mx.metal.get_peak_memory()     # Peak allocation since last reset
-mx.metal.get_cache_memory()    # Cached (freed but held) bytes
-mx.metal.set_memory_limit(n)   # Set soft memory limit
-mx.metal.set_cache_limit(n)    # Set cache size limit
-mx.clear_cache()               # Free cached buffers
-```
+to the system. For the complete memory management API, see
+[Memory Management Complete API](#memory-management-complete-api) below.
 
 For long-running programs (servers, generation loops), periodically call
 `mx.clear_cache()` to prevent the cache from growing unboundedly, especially
@@ -298,13 +290,22 @@ losses = batched_loss(batch_x, batch_y)  # Vectorized over batch dim
 
 | Category | Types |
 |----------|-------|
-| Float | `float16`, `bfloat16`, `float32` |
-| Integer | `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32` |
+| Float | `float16`, `bfloat16`, `float32`, `float64` (CPU only) |
+| Integer | `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64` |
 | Boolean | `bool_` |
 | Complex | `complex64` |
 
-Note: `float64` is **not supported** on GPU. This is a common gotcha when
-porting NumPy code.
+Note: `float64` and `uint64` exist but are **not supported on GPU**. This is a
+common gotcha when porting NumPy code. Use `float32` as the highest GPU
+precision.
+
+### Type Inspection
+
+```python
+mx.finfo(mx.float16)   # Floating-point type info (min, max, eps, etc.)
+mx.iinfo(mx.int8)      # Integer type info (min, max, bits)
+mx.issubdtype(mx.float16, mx.floating)  # Check dtype relationships
+```
 
 ### Type Promotion Rules
 
@@ -379,6 +380,17 @@ For reproducibility in parallel contexts, split keys:
 key1, key2 = mx.random.split(key)
 ```
 
+### Available Distributions
+
+Standard distributions (`uniform`, `normal`, `randint`, `bernoulli`, `gumbel`,
+`laplace`, `permutation`) work as expected from NumPy. Non-obvious additions:
+
+| Function | Description |
+|----------|-------------|
+| `mx.random.multivariate_normal(mean, cov, shape)` | Multivariate normal (full covariance) |
+| `mx.random.truncated_normal(lower, upper, shape)` | Bounded normal distribution |
+| `mx.random.categorical(logits, axis, num_samples)` | Sample from logits (used in LLM generation) |
+
 ## Indexing and Slicing
 
 MLX supports basic indexing and slicing but has limitations compared to NumPy:
@@ -386,6 +398,26 @@ MLX supports basic indexing and slicing but has limitations compared to NumPy:
 - **Supported**: Basic indexing, slicing, boolean masking, `mx.take_along_axis`
 - **Limited**: Fancy indexing with integer arrays (less efficient)
 - **Preferred**: `mx.take_along_axis` and `mx.put_along_axis` for gather/scatter
+
+### Additional Array Operations
+
+Operations not covered elsewhere that are available in MLX:
+
+| Function | Description |
+|----------|-------------|
+| `mx.topk(a, k, axis)` | Return top-k elements along axis |
+| `mx.median(a, axis, keepdims)` | Median reduction |
+| `mx.cummax(a, axis, reverse, inclusive)` | Cumulative maximum |
+| `mx.cummin(a, axis, reverse, inclusive)` | Cumulative minimum |
+| `mx.logcumsumexp(a, axis, reverse, inclusive)` | Cumulative log-sum-exp |
+| `mx.unflatten(a, axis, shape)` | Unflatten a dimension into multiple |
+| `mx.hadamard_transform(a, scale)` | Fast Hadamard transform |
+| `mx.contiguous(a, allow_col_major)` | Ensure contiguous memory layout |
+| `mx.as_strided(a, shape, strides, offset)` | View array with custom strides |
+| `mx.convolve(a, v, mode)` | 1D convolution (via FFT) |
+| `mx.depends(inputs, dependencies)` | Add explicit data dependencies between ops |
+| `mx.view(a, dtype)` | Reinterpret array bit pattern as another dtype |
+| `mx.kron(a, b)` | Kronecker product |
 
 ```python
 # Prefer take_along_axis over fancy indexing
@@ -496,19 +528,10 @@ Computes the vector-Jacobian product (reverse-mode). Lower-level than `mx.grad`
 
 ### Custom Functions
 
-```python
-@mx.custom_function
-def my_fn(x):
-    return forward_result
-
-@my_fn.vjp
-def my_fn_vjp(primals, cotangent, output):
-    return (grad_x,)
-```
-
-Define custom forward and backward passes. Pair with `mx.fast.metal_kernel` to
-write GPU-accelerated ops with differentiable gradients. See
-[references/custom-kernels.md](../references/custom-kernels.md).
+`@mx.custom_function` defines custom forward/backward passes. Pair with
+`mx.fast.metal_kernel` for differentiable GPU ops. See
+[references/custom-kernels.md](../references/custom-kernels.md) for the full
+pattern with `@my_fn.vjp`.
 
 ### Compile Control
 
@@ -535,6 +558,23 @@ MLX supports distributed communication via `mx.distributed`:
 | `mx.distributed.all_min(x, group)` | Element-wise min across all processes |
 | `mx.distributed.send(x, dst, group)` | Send to a specific rank |
 | `mx.distributed.recv(shape, dtype, src, group)` | Receive from a specific rank |
+| `mx.distributed.recv_like(x, src, group)` | Receive array with same shape/dtype as x |
+| `mx.distributed.sum_scatter(x, group)` | Sum-reduce then scatter equal chunks to each process |
+
+### sum_scatter for Pipeline Parallelism
+
+`sum_scatter` is the inverse of `all_gather`: it sums contributions from all
+processes, then splits the result so each process gets its chunk. This is useful
+for reduce-scatter patterns in pipeline and tensor parallelism:
+
+```python
+group = mx.distributed.init()
+grads = compute_gradients(local_data)
+local_grads = mx.distributed.sum_scatter(grads, group=group)
+```
+
+More memory-efficient than `all_sum` + slice because the full summed tensor
+never materializes on any single process.
 
 ## Quantization
 
@@ -560,15 +600,101 @@ nn.quantize(model)
 nn.quantize(model, bits=8, class_predicate=lambda p, m: isinstance(m, nn.Linear) and "lm_head" not in p)
 ```
 
+## Fourier Transforms (mx.fft)
+
+MLX provides a complete FFT module mirroring NumPy's `np.fft`:
+
+| Function | Description |
+|----------|-------------|
+| `mx.fft.fft(a, n, axis)` | 1D discrete Fourier transform |
+| `mx.fft.ifft(a, n, axis)` | 1D inverse DFT |
+| `mx.fft.fft2(a, s, axes)` | 2D DFT (default axes `[-2, -1]`) |
+| `mx.fft.ifft2(a, s, axes)` | 2D inverse DFT |
+| `mx.fft.fftn(a, s, axes)` | N-dimensional DFT |
+| `mx.fft.ifftn(a, s, axes)` | N-dimensional inverse DFT |
+| `mx.fft.rfft(a, n, axis)` | 1D real-input FFT (output size `n//2 + 1`) |
+| `mx.fft.irfft(a, n, axis)` | Inverse of rfft (output is real) |
+| `mx.fft.rfft2(a, s, axes)` | 2D real-input FFT |
+| `mx.fft.irfft2(a, s, axes)` | Inverse of rfft2 |
+| `mx.fft.rfftn(a, s, axes)` | N-dimensional real-input FFT |
+| `mx.fft.irfftn(a, s, axes)` | Inverse of rfftn |
+| `mx.fft.fftshift(a, axes)` | Shift zero-frequency component to center |
+| `mx.fft.ifftshift(a, axes)` | Inverse of fftshift |
+
+All functions accept an optional `stream` parameter. The `n`/`s` parameters
+control the transform size (default: input size along the transformed axes).
+The `rfft` variants exploit real-input symmetry for ~2x memory savings.
+
+## Linear Algebra (mx.linalg)
+
+MLX mirrors NumPy/SciPy's `linalg` API: `norm`, `qr`, `svd`, `inv`, `pinv`,
+`cholesky`, `lu`, `eig`, `eigvals`, `eigh`, `eigvalsh`, `solve`, `cross` all
+work with identical signatures. Non-obvious additions:
+
+| Function | Description |
+|----------|-------------|
+| `mx.linalg.tri_inv(a, upper)` | Triangular matrix inverse (not in NumPy) |
+| `mx.linalg.cholesky_inv(L, upper)` | Inverse from Cholesky factor (not in NumPy) |
+| `mx.linalg.lu_factor(a)` | LU factorization in compact form |
+| `mx.linalg.solve_triangular(a, b, upper)` | Solve triangular system |
+
+## Function Export / Import
+
+MLX can serialize compiled computation graphs for deployment without Python:
+
+```python
+# Export a function with example inputs
+mx.export_function("model.mlxfn", model, mx.zeros((1, 784)))
+
+# Or use the exporter context manager for multiple input shapes
+with mx.exporter("model.mlxfn", model, shapeless=True) as exporter:
+    exporter(mx.zeros((1, 784)))
+    exporter(mx.zeros((4, 784)))
+
+# Import and run without the original Python code
+imported_fn = mx.import_function("model.mlxfn")
+result = imported_fn(input_data)
+
+# Visualize computation graph
+mx.export_to_dot("graph.dot", model, mx.zeros((1, 784)))
+```
+
 ## Memory Management Complete API
 
 | Function | Description |
 |----------|-------------|
+| `mx.metal.is_available()` | Check if Metal backend is available |
 | `mx.metal.get_active_memory()` | Currently allocated bytes |
 | `mx.metal.get_peak_memory()` | Peak allocation since last reset |
 | `mx.metal.reset_peak_memory()` | Reset peak memory counter |
 | `mx.metal.get_cache_memory()` | Cached (freed but held) bytes |
 | `mx.metal.set_memory_limit(n)` | Soft limit; allocations beyond this may fail or page |
 | `mx.metal.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
+| `mx.metal.clear_cache()` | Clear GPU memory cache (same as `mx.clear_cache()`) |
+| `mx.metal.start_capture(path)` | Start Metal GPU trace capture |
+| `mx.metal.stop_capture()` | Stop Metal GPU trace capture |
+| `mx.metal.device_info()` | Metal device properties dict |
 | `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents paging for large models) |
 | `mx.clear_cache()` | Release all cached buffers back to the system |
+
+## FP8 Quantization
+
+MLX supports FP8 (8-bit floating point) for efficient inference:
+
+```python
+# Convert arrays to/from FP8
+fp8_data = mx.to_fp8(x)        # Convert to FP8 representation
+full_data = mx.from_fp8(fp8_data, dtype=mx.float16)  # Convert back
+
+# Quantized-quantized matmul (both operands quantized)
+result = mx.qqmm(x, w, scales, biases, ...)
+
+# Gathered quantized matmul
+result = mx.gather_qmm(x, w, scales, biases, lhs_indices, rhs_indices, ...)
+
+# Segmented matmul for batched variable-length operations
+result = mx.segmented_mm(a, b, segments)
+```
+
+These are used internally by `nn.QQLinear` and advanced quantization modes
+(`"nvfp4"`, `"mxfp8"`).

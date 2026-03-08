@@ -24,13 +24,16 @@ OpenCode. Skills are markdown files with YAML frontmatter in the top-level
 | Speed up my MLX code | fast-mlx | `/mlx-skills:fast-mlx` |
 | Reduce memory usage | fast-mlx | `/mlx-skills:fast-mlx` |
 | Profile performance | fast-mlx | `/mlx-skills:fast-mlx` |
+| Run MLX on NVIDIA GPU | mlx-cuda | `/mlx-skills:mlx-cuda` |
+| Write custom CUDA kernels | mlx-cuda | `/mlx-skills:mlx-cuda` |
+| Port Metal kernels to CUDA | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Update skills from upstream | update-skills | `/update-skills` |
 | Verify content accuracy | review-content | `/review-content` |
 | Bump version everywhere | sync-versions | `/sync-versions 0.5.3` |
 
 ## Skills and When They Load
 
-There are three skills. Each has a `SKILL.md` (always loaded when triggered)
+There are four skills. Each has a `SKILL.md` (always loaded when triggered)
 and `references/` files (loaded on demand).
 
 ### mlx (core framework)
@@ -81,6 +84,22 @@ mlx code slow".
 
 **What it covers:** graph evaluation, type promotion, fast ops, compilation,
 memory management, profiling, LLM/diffusion-specific optimization.
+
+### mlx-cuda (CUDA backend)
+
+**Use for:** Running MLX on NVIDIA GPUs, writing custom CUDA kernels, porting
+Metal kernels to CUDA.
+
+**Triggers:** `mx.cuda`, `cuda_kernel`, `precompiled_cuda_kernel`, `nvidia`,
+"run mlx on cuda", "NVIDIA GPU", "cuda backend".
+
+**Invocation:**
+- Automatic: mention CUDA or NVIDIA in MLX context
+- Explicit: `/mlx-skills:mlx-cuda` (plugin) or `/mlx-cuda` (personal skill)
+- From other skills: "For CUDA backend support, load the mlx-cuda skill"
+
+**What it covers:** backend detection, custom CUDA kernels, precompiled kernels,
+Metal-to-CUDA kernel migration, CUDA-specific differences.
 
 ## Usage Scenarios
 
@@ -143,7 +162,7 @@ memory management, profiling, LLM/diffusion-specific optimization.
 
 ### "Bump project version" (maintainer)
 1. `/sync-versions 0.5.3` loads the version coordinator
-2. Updates version in all 5 locations (pyproject.toml, 3 SKILL.md, plugin.json)
+2. Updates version in all 6 locations (pyproject.toml, 4 SKILL.md, plugin.json)
 3. Updates `last_verified` dates, adds CHANGELOG section header
 4. Runs validator and tests to confirm
 
@@ -168,7 +187,7 @@ memory management, profiling, LLM/diffusion-specific optimization.
 ```
 uv run mlx-skills --claude --force    # Install skills locally
 uv run mlx-skills-validate            # Validate skill structure
-uv run pytest tests/                  # Run tests (90 tests)
+uv run pytest tests/                  # Run tests (100 tests)
 uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 ```
 
@@ -195,6 +214,13 @@ uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 - `mlx` skill: core MLX framework only (no mlx-lm specifics)
 - `mlx-lm` skill: Apple's mlx-lm library only (generation, caching, fine-tuning)
 - `fast-mlx` skill: performance optimization (profiling, compilation, memory)
+- `mlx-cuda` skill: CUDA backend only (keep separate from Metal content)
 - Avoid duplicating content across skills; use cross-references instead
 - Code examples should be minimal and correct
 - Keep SKILL.md concise; put details in reference files
+- Backend-specific content goes in its own skill (avoids context cost for
+  users on other platforms)
+- In reference tables, omit trivially obvious 1:1 API mappings (e.g.,
+  `np.linalg.svd` -> `mx.linalg.svd`); use prose instead
+- `coderef/` contains upstream source checkouts for API gap analysis;
+  compare `.pyi` files against skill content to find missing APIs

@@ -1,10 +1,12 @@
 last updated: 2026-03-08
 
-# Custom Metal and CUDA Kernels
+# Custom Metal Kernels
 
-Write custom GPU kernels in MLX using `mx.fast.metal_kernel` (Apple silicon) and
-`mx.fast.cuda_kernel` (NVIDIA GPUs). Use when no built-in op exists for your
-computation or when fusing many ops into a single kernel improves performance.
+Write custom GPU kernels in MLX using `mx.fast.metal_kernel` for Apple silicon.
+Use when no built-in op exists for your computation or when fusing many ops into
+a single kernel improves performance.
+
+For CUDA kernel support on NVIDIA GPUs, load the `mlx-cuda` skill.
 
 ## metal_kernel API
 
@@ -134,27 +136,6 @@ def my_op_vjp(primals, cotangent, output):
 ```
 
 This enables `mx.grad(my_op)` to work correctly with your custom kernel.
-
-## cuda_kernel API
-
-```python
-kernel = mx.fast.cuda_kernel(
-    name="my_kernel",
-    input_names=["inp"],
-    output_names=["out"],
-    source=source,           # CUDA kernel body
-    header="",               # Optional header
-    ensure_row_contiguous=True,
-    shared_memory=0,         # Dynamic shared memory in bytes
-)
-```
-
-The call interface is identical to `metal_kernel`. Key differences:
-
-- Use `cooperative_groups::this_grid().thread_rank()` instead of `thread_position_in_grid.x`
-- Use standard CUDA math functions (`exp`) instead of Metal (`metal::exp`)
-- `shared_memory` parameter replaces `atomic_outputs`
-- Grid is in threads (not blocks), matching Metal convention
 
 ## Performance notes
 
