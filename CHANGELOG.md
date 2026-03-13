@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.5
+
+### Removed
+
+- `scripts/validate.py` -- replaced by skill-maintainer plugin (`/skill-maintainer:quality`)
+- `tests/test_validate.py` and `tests/test_skill_structure.py` -- tests for removed validator
+- Fixtures in `tests/conftest.py` used exclusively by removed tests
+- `Bash(uv run mlx-skills-validate:*)` permission entry (dead reference)
+
+### Changed
+
+- CLAUDE.md: removed validate.py references, added skill-maintainer plugin install note
+- README.md: replaced `scripts/validate.py` command with plugin install instructions, removed from structure tree
+- `.claude/skills/update-skills.md`: validation step now uses `/skill-maintainer:quality`; fixed stale `mlx_skills/skills/` paths to `skills/` (pre-0.5.0 remnant)
+
+### Fixed
+
+- Version alignment: synced all version sources to 0.5.5
+  - root plugin.json: 0.5.4 -> 0.5.5
+  - marketplace plugin.json: 0.5.1 -> 0.5.5
+  - marketplace.json: 0.5.0 -> 0.5.5
+  - pyproject.toml: 0.5.4 -> 0.5.5
+  - all 4 SKILL.md metadata.version: 0.5.4 -> 0.5.5
+
 ## 0.5.4
 
 ### Added

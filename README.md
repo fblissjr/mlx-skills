@@ -77,8 +77,20 @@ Explicit invocation depends on how you installed:
 
 ## validation
 
+Skill validation is handled by the skill-maintainer plugin:
+
 ```bash
-uv run python scripts/validate.py     # validate skill structure
+# Install the plugin (once)
+/plugin marketplace add fblissjr/fb-claude-skills
+/plugin install skill-maintainer@fb-claude-skills
+
+# Run quality check
+/skill-maintainer:quality
+```
+
+Or run tests directly:
+
+```bash
 uv run pytest tests/                  # run test suite
 ```
 
@@ -115,7 +127,6 @@ skills/                     Skill source (auto-discovered)
   mlx-cuda/
     SKILL.md
 scripts/
-  validate.py               Skill structure validation
   check_updates.py          Upstream change scanner
 tests/
 ```

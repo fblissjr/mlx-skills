@@ -15,7 +15,7 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.4
+  version: 0.5.5
   last_verified: "2026-03-13"
 ---
 

@@ -174,7 +174,6 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 - `plugins/mlx-skills/` -- marketplace plugin wrapper (symlinks to `skills/`)
 - `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
 - `skills/*/references/*.md` -- reference material (loaded on demand)
-- `scripts/validate.py` -- skill structure validation
 - `scripts/check_updates.py` -- upstream change scanner
 - `.claude/skills/` -- project-level maintainer skills (not part of plugin)
 - `tests/` -- pytest suite
@@ -182,10 +181,11 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 ### Commands
 
 ```
-uv run python scripts/validate.py     # Validate skill structure
 uv run pytest tests/                  # Run tests
 uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 ```
+
+Skill validation is handled by the skill-maintainer plugin (`/skill-maintainer:quality`). Install via: `/plugin marketplace add fblissjr/fb-claude-skills` then `/plugin install skill-maintainer@fb-claude-skills`.
 
 ### Skill structure rules
 
@@ -202,7 +202,7 @@ uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 - Reference files go in `references/` and are loaded on demand
 - Reference files should start with `last updated: YYYY-MM-DD`
 - Cross-references use `load the \`skill-name\` skill` pattern
-- Run `uv run python scripts/validate.py` after any changes to verify structure
+- Run `/skill-maintainer:quality` after any changes to verify structure (requires skill-maintainer plugin)
 
 ### Content guidelines
 
