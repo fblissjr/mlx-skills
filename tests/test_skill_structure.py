@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from mlx_skills.validate import (
+from validate import (
     _find_cross_refs,
     _has_last_updated,
     _parse_frontmatter,

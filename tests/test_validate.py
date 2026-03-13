@@ -1,11 +1,11 @@
-"""Tests for mlx_skills.validate module."""
+"""Tests for validate module."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
 
-from mlx_skills.validate import (
+from validate import (
     _find_cross_refs,
     _has_last_updated,
     _parse_frontmatter,

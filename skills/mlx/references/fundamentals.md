@@ -1,4 +1,4 @@
-last updated: 2026-03-08
+last updated: 2026-03-13
 
 # MLX Fundamentals
 
@@ -504,7 +504,7 @@ float32 regardless of input dtype.
 | `mx.stream(s)` | Context manager to route ops to stream `s` |
 | `mx.synchronize(stream=None)` | Wait for all work (or work on a specific stream) |
 | `mx.device_count(kind)` | Count available devices of a kind |
-| `mx.device_info()` | Dict with device info including `max_recommended_working_set_size` |
+| `mx.device_info()` | Dict with device info including `max_recommended_working_set_size` (backend-agnostic, prefer over `mx.metal.device_info()`) |
 
 ## Additional Transforms
 
@@ -673,7 +673,7 @@ mx.export_to_dot("graph.dot", model, mx.zeros((1, 784)))
 | `mx.metal.clear_cache()` | Clear GPU memory cache (same as `mx.clear_cache()`) |
 | `mx.metal.start_capture(path)` | Start Metal GPU trace capture |
 | `mx.metal.stop_capture()` | Stop Metal GPU trace capture |
-| `mx.metal.device_info()` | Metal device properties dict |
+| `mx.metal.device_info()` | Metal-specific device properties dict (prefer `mx.device_info()` for portable code) |
 | `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents paging for large models) |
 | `mx.clear_cache()` | Release all cached buffers back to the system |
 

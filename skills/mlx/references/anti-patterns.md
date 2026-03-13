@@ -1,4 +1,4 @@
-last updated: 2026-03-08
+last updated: 2026-03-13
 
 # MLX Anti-Patterns
 
@@ -447,3 +447,35 @@ scores = mx.softmax(scores.astype(mx.float32), axis=-1).astype(scores.dtype)
 # GOOD: use the precise flag
 scores = mx.softmax(scores, axis=-1, precise=True)
 ```
+
+## Deprecated API Patterns
+
+### Removed `communication_type` Parameter
+
+The `communication_type` parameter has been removed from `nn.utils.average_gradients`
+and `nn.utils.fsdp_apply_gradients`. If your code passes this argument, remove it:
+
+```python
+# BAD: communication_type no longer exists
+grads = nn.utils.average_gradients(grads, group=group, communication_type="ring")
+
+# GOOD: just drop the parameter
+grads = nn.utils.average_gradients(grads, group=group)
+```
+
+### Renamed `group` to `fsdp_group` in fsdp_apply_gradients
+
+The `group` parameter in `fsdp_apply_gradients` has been renamed to `fsdp_group`,
+and a new `dp_group` parameter was added for hybrid FSDP+DDP training:
+
+```python
+# BAD: old signature
+nn.utils.fsdp_apply_gradients(grads, params, optimizer, group=fsdp_group)
+
+# GOOD: new signature with explicit group names
+nn.utils.fsdp_apply_gradients(
+    grads, params, optimizer, fsdp_group=fsdp_group, dp_group=dp_group
+)
+```
+
+For the full hybrid sharding pattern, see `references/nn-and-training.md`.

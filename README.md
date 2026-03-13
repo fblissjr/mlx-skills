@@ -24,18 +24,10 @@ Or from a local clone:
 claude plugin add /path/to/mlx-skills
 ```
 
-### legacy CLI
-
-```bash
-uv run mlx-skills --claude --force
-```
-
-Other targets: `--codex`, `--opencode`, or `--dest /path/to/skills`.
-
 ### manual
 
-Copy `skills/mlx`, `skills/mlx-lm`, and `skills/fast-mlx` into your
-assistant's skills directory (e.g., `~/.claude/skills/`).
+Copy `skills/mlx`, `skills/mlx-lm`, `skills/fast-mlx`, and `skills/mlx-cuda`
+into your assistant's skills directory (e.g., `~/.claude/skills/`).
 
 ## skills
 
@@ -44,6 +36,7 @@ assistant's skills directory (e.g., `~/.claude/skills/`).
 | mlx | `import mlx`, `mx.array`, `nn.Module`, "port to mlx", "training loop" | Core framework: lazy eval, unified memory, compile, nn.Module, layers, optimizers, porting |
 | mlx-lm | `import mlx_lm`, `stream_generate`, `KVCache`, "run llama", "local LLM" | Language models: loading, generation, KV cache, quantization, LoRA, serving |
 | fast-mlx | "optimize mlx", "speed up", "profiling", "reduce memory" | Performance: graph eval, compile, memory management, LLM/diffusion optimization |
+| mlx-cuda | `mx.cuda`, `cuda_kernel`, "NVIDIA GPU", "run mlx on cuda" | CUDA backend: detection, custom CUDA kernels, Metal-to-CUDA porting |
 
 ### invocation
 
@@ -56,11 +49,13 @@ Explicit invocation depends on how you installed:
 /mlx-skills:mlx
 /mlx-skills:mlx-lm
 /mlx-skills:fast-mlx
+/mlx-skills:mlx-cuda
 
 # Legacy CLI / manual install (personal skills)
 /mlx
 /mlx-lm
 /fast-mlx
+/mlx-cuda
 ```
 
 ### reference files (loaded on demand)
@@ -72,6 +67,7 @@ Explicit invocation depends on how you installed:
 | mlx | anti-patterns.md | NumPy/PyTorch habits that break in MLX |
 | mlx | debugging.md | Shape debugging, memory profiling, common errors |
 | mlx | porting-guide.md | PyTorch-to-MLX migration with API mapping tables |
+| mlx | custom-kernels.md | Custom Metal kernels with mx.fast.metal_kernel |
 | mlx-lm | patterns.md | Attention, KV cache, generation, quantization, LoRA, RoPE |
 | mlx-lm | architecture.md | Model loading, generation flow, fine-tuning, server integration |
 | fast-mlx | fast-mlx-guide.md | Graph eval, type promotion, ops, compile, memory, profiling |
@@ -82,8 +78,8 @@ Explicit invocation depends on how you installed:
 ## validation
 
 ```bash
-uv run mlx-skills-validate            # validate skill structure
-uv run pytest tests/                  # run test suite (90 tests)
+uv run python scripts/validate.py     # validate skill structure
+uv run pytest tests/                  # run test suite
 ```
 
 ## maintenance
@@ -116,11 +112,10 @@ skills/                     Skill source (auto-discovered)
   fast-mlx/
     SKILL.md
     references/
-mlx_skills/                 Python package (legacy CLI)
-  cli.py
-  validate.py
-  skills -> ../skills       Symlink for pip compat
+  mlx-cuda/
+    SKILL.md
 scripts/
+  validate.py               Skill structure validation
   check_updates.py          Upstream change scanner
 tests/
 ```

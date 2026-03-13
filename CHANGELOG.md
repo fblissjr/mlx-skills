@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.5.4
+
+### Added
+
+- Hybrid sharding (FSDP+DDP) section in nn-and-training.md: `average_gradients`
+  and `fsdp_apply_gradients` with new signatures, hybrid training pattern
+- Presence and frequency penalty samplers in patterns.md: `make_presence_penalty`,
+  `make_frequency_penalty`, expanded `make_logits_processors` with new params
+- Presence/frequency penalty rows in architecture.md sampling table
+- CUDA-specific operations section in mlx-cuda SKILL.md: SegmentedMM for MoE
+  routing, expanded QMV kernel fp quantization modes (3/5/6-bit), Windows build
+  support with cuDNN
+- Deprecated API Patterns section in anti-patterns.md: `communication_type`
+  removal, `group` -> `fsdp_group` rename
+
+### Removed
+
+- Legacy CLI installer (`mlx-skills` command) and `mlx_skills/` Python package
+- `mlx_skills/skills` symlink (pip distribution compat, no longer needed)
+
+### Changed
+
+- Validator moved from `mlx_skills/validate.py` to `scripts/validate.py`
+- `nn.Module.update(params)` now silently ignores extra keys (non-strict update)
+- `mx.device_info()` clarified as backend-agnostic, preferred over
+  `mx.metal.device_info()` for portable code
+- `BatchRotatingKVCache` note about `mx.depends()` for evaluation ordering
+- Updated `last_verified` dates across all skills
+
 ## 0.5.3
 
 ### Added

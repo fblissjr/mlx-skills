@@ -3,9 +3,8 @@
 ## Project Overview
 
 This is a Claude Code plugin that teaches AI coding assistants how to write
-correct, performant MLX code. It can also be installed standalone for Codex and
-OpenCode. Skills are markdown files with YAML frontmatter in the top-level
-`skills/` directory, auto-discovered by the plugin system.
+correct, performant MLX code. Skills are markdown files with YAML frontmatter
+in the top-level `skills/` directory, auto-discovered by the plugin system.
 
 ## Which Skill Do I Need?
 
@@ -29,7 +28,7 @@ OpenCode. Skills are markdown files with YAML frontmatter in the top-level
 | Port Metal kernels to CUDA | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Update skills from upstream | update-skills | `/update-skills` |
 | Verify content accuracy | review-content | `/review-content` |
-| Bump version everywhere | sync-versions | `/sync-versions 0.5.3` |
+| Bump version everywhere | sync-versions | `/sync-versions 0.5.4` |
 
 ## Skills and When They Load
 
@@ -175,9 +174,7 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 - `plugins/mlx-skills/` -- marketplace plugin wrapper (symlinks to `skills/`)
 - `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
 - `skills/*/references/*.md` -- reference material (loaded on demand)
-- `mlx_skills/cli.py` -- legacy CLI installer (`mlx-skills` entrypoint)
-- `mlx_skills/validate.py` -- validation (`mlx-skills-validate` entrypoint)
-- `mlx_skills/skills` -- symlink to `../skills` (pip distribution compat)
+- `scripts/validate.py` -- skill structure validation
 - `scripts/check_updates.py` -- upstream change scanner
 - `.claude/skills/` -- project-level maintainer skills (not part of plugin)
 - `tests/` -- pytest suite
@@ -185,16 +182,14 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 ### Commands
 
 ```
-uv run mlx-skills --claude --force    # Install skills locally
-uv run mlx-skills-validate            # Validate skill structure
-uv run pytest tests/                  # Run tests (100 tests)
+uv run python scripts/validate.py     # Validate skill structure
+uv run pytest tests/                  # Run tests
 uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 ```
 
 ### Skill structure rules
 
-- Skills are at top-level `skills/`; `mlx_skills/skills` is a symlink for pip compat
-- `validate.py` tries top-level path first, falls back to `importlib.resources`
+- Skills are at top-level `skills/`
 - Every skill directory must have a `SKILL.md` with YAML frontmatter
 - Frontmatter must have `name` (matching directory name) and `description` fields
 - `description` should follow WHAT + WHEN + Capabilities formula, list trigger keywords
@@ -207,7 +202,7 @@ uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 - Reference files go in `references/` and are loaded on demand
 - Reference files should start with `last updated: YYYY-MM-DD`
 - Cross-references use `load the \`skill-name\` skill` pattern
-- Run `uv run mlx-skills-validate` after any changes to verify structure
+- Run `uv run python scripts/validate.py` after any changes to verify structure
 
 ### Content guidelines
 

@@ -13,8 +13,8 @@ compatibility: "Requires NVIDIA GPU with CUDA support and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.3
-  last_verified: "2026-03-08"
+  version: 0.5.4
+  last_verified: "2026-03-13"
 ---
 
 # MLX CUDA Backend
@@ -138,6 +138,37 @@ Grid is specified in total threads (not blocks), matching Metal convention.
 
 For general custom kernel performance guidance (build once/call many, templates,
 verbose mode), see `references/custom-kernels.md` in the `mlx` skill.
+
+## CUDA-Specific Operations
+
+### SegmentedMM for MoE Routing
+
+`mx.segmented_mm` performs batched variable-length matrix multiplications, useful
+for Mixture of Experts routing where each expert processes a different number of
+tokens:
+
+```python
+# a: (total_tokens, D), b: (num_experts, D, E)
+# segments: 1D int array of length num_experts with cumulative token counts
+# e.g., segments=[5, 12, 20] means expert 0 gets tokens 0-4, expert 1 gets 5-11, etc.
+result = mx.segmented_mm(a, b, segments)  # -> (total_tokens, E)
+```
+
+### QMV Kernel Support
+
+The CUDA backend supports quantized matrix-vector (QMV) kernels with expanded
+floating-point quantization modes including 3-bit, 5-bit, and 6-bit support in
+addition to the standard 4-bit and 8-bit modes. These are used internally by
+`nn.QuantizedLinear` -- specify the bit width via the `bits` parameter:
+
+```python
+layer = nn.QuantizedLinear(in_dims, out_dims, bits=6, group_size=64)
+```
+
+### Windows Build Support
+
+MLX's CUDA backend now supports building on Windows with cuDNN integration,
+enabling NVIDIA GPU acceleration on Windows systems.
 
 ## Related Skills
 

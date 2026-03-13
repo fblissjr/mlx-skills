@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlx-skills"
-version = "0.5.3"
+version = "0.5.4"
 description = "Skills that teach AI coding assistants how MLX works."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -13,23 +13,11 @@ license = "MIT"
 [project.urls]
 Repository = "https://github.com/fblissjr/mlx-skills"
 
-[project.scripts]
-mlx-skills = "mlx_skills.cli:main"
-mlx-skills-validate = "mlx_skills.validate:main"
+[tool.setuptools]
+packages = []
 
 [dependency-groups]
 dev = ["pytest>=7.0"]
-
-[tool.setuptools]
-package-dir = {"" = "."}
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["mlx_skills*"]
-
-[tool.setuptools.package-data]
-mlx_skills = ["skills/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

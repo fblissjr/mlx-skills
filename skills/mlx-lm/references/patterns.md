@@ -1,4 +1,4 @@
-last updated: 2026-03-06
+last updated: 2026-03-13
 
 # Idiomatic MLX Patterns
 
@@ -386,6 +386,10 @@ Rotating cache with batch support and per-sequence left-padding:
 cache = BatchRotatingKVCache(max_size=4096, left_padding=[0, 128, 64])
 ```
 
+Note: `BatchRotatingKVCache` uses `mx.depends()` internally to enforce correct
+evaluation ordering between cache reads and writes. This ensures correctness
+when operations on the cache are reordered by the graph scheduler.
+
 ### Cache Factory Pattern
 
 Models define `make_cache()` to create the correct cache per layer:
@@ -724,15 +728,33 @@ categorical sampling at the specified temperature.
 from mlx_lm.sample_utils import make_logits_processors
 
 processors = make_logits_processors(
-    logit_bias=None,            # Dict[int, float] additive bias per token
-    repetition_penalty=1.2,     # Penalty factor for repeated tokens
-    repetition_context_size=20, # Number of recent tokens to penalize
+    logit_bias=None,                # Dict[int, float] additive bias per token
+    repetition_penalty=1.2,         # Penalty factor for repeated tokens
+    repetition_context_size=20,     # Number of recent tokens to penalize
+    presence_penalty=0.0,           # Flat additive penalty for present tokens
+    presence_context_size=20,       # Context window for presence tracking
+    frequency_penalty=0.0,          # Count-scaled additive penalty
+    frequency_context_size=20,      # Context window for frequency tracking
 )
 ```
 
-Logits processors run before sampling. Repetition penalty scales logits: tokens
-with negative logits are multiplied by the penalty, tokens with positive logits
-are divided by it.
+Logits processors run before sampling. The three penalty types differ:
+
+- **Repetition penalty** (multiplicative): tokens with negative logits are
+  multiplied by the penalty, tokens with positive logits are divided by it
+- **Presence penalty** (flat additive): subtracts a fixed value from logits of
+  any token that has appeared in the context window, regardless of count
+- **Frequency penalty** (count-scaled additive): subtracts a value proportional
+  to how many times a token has appeared in the context window
+
+Standalone penalty functions are also available:
+
+```python
+from mlx_lm.sample_utils import make_presence_penalty, make_frequency_penalty
+
+presence_fn = make_presence_penalty(penalty=0.6, context_size=20)
+frequency_fn = make_frequency_penalty(penalty=0.3, context_size=20)
+```
 
 ### XTC Sampling
 

@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.resources as resources
 import re
 import sys
 from pathlib import Path
 
 
 def _default_skills_dir() -> Path:
-    """Locate the skills directory, preferring top-level over package-internal."""
-    top_level = Path(__file__).resolve().parent.parent / "skills"
-    if top_level.is_dir():
-        return top_level
-    # Fallback for pip-installed package
-    with resources.as_file(resources.files("mlx_skills").joinpath("skills")) as p:
-        return Path(p)
+    """Locate the skills directory relative to this script."""
+    return Path(__file__).resolve().parent.parent / "skills"
 
 
 SKILLS_DIR = _default_skills_dir()

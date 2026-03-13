@@ -1,4 +1,4 @@
-last updated: 2026-03-02
+last updated: 2026-03-13
 
 # nn Module and Training
 
@@ -26,7 +26,7 @@ Key design differences from PyTorch:
 | `freeze()` | Marks all parameters as non-trainable |
 | `unfreeze()` | Marks all parameters as trainable |
 | `load_weights(path)` | Load weights from safetensors/npz file |
-| `update(params)` | Update parameters from a nested dict |
+| `update(params)` | Update parameters from a nested dict (extra keys silently ignored) |
 | `apply_to_modules(fn)` | Apply a function to all submodules by name |
 | `children()` | Returns immediate child modules |
 | `leaf_modules()` | Returns all leaf modules (no children) |
@@ -485,6 +485,49 @@ def step(x, y):
     grads = tree_map(lambda g: mx.distributed.all_sum(g) / group.size(), grads)
     optimizer.update(model, grads)
     return loss
+```
+
+### Hybrid Sharding (FSDP + DDP)
+
+For large-scale training that spans multiple nodes, MLX supports hybrid sharding
+that combines Fully Sharded Data Parallel (FSDP) within a node and Distributed
+Data Parallel (DDP) across nodes.
+
+Helper functions for distributed gradient handling:
+
+| Function | Description |
+|----------|-------------|
+| `nn.utils.average_gradients(grads, group=None, all_reduce_size=32*1024**2, communication_stream=None)` | Average gradients across all processes in a group |
+| `nn.utils.fsdp_apply_gradients(grads, params, optimizer, fsdp_group=None, dp_group=None, communication_size=32*1024**2, communication_stream=None, max_norm=None)` | Apply gradients with FSDP all-gather and optional DDP averaging |
+
+Hybrid FSDP+DDP pattern:
+
+```python
+# Initialize separate groups for intra-node (FSDP) and inter-node (DDP)
+world = mx.distributed.init()
+fsdp_group = world.split(world.rank() // local_size)  # intra-node
+dp_group = world.split(world.rank() % local_size)     # inter-node
+
+def step(x, y):
+    loss, grads = nn.value_and_grad(model, loss_fn)(model, x, y)
+    # FSDP all-gather within node + DDP average across nodes
+    nn.utils.fsdp_apply_gradients(
+        grads, model.trainable_parameters(), optimizer,
+        fsdp_group=fsdp_group, dp_group=dp_group,
+    )
+    return loss
+```
+
+Previous versions of these functions accepted a `communication_type` parameter
+-- this has been removed. The `group` parameter in `fsdp_apply_gradients` was
+renamed to `fsdp_group`. See `references/anti-patterns.md` for migration examples.
+
+For simple DDP (all processes share the full model), use `average_gradients`:
+
+```python
+group = mx.distributed.init()
+grads = nn.utils.average_gradients(grads, group=group)
+optimizer.update(model, grads)
 ```
 
 ### Distributed Layers

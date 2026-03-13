@@ -1,4 +1,4 @@
-last updated: 2026-03-06
+last updated: 2026-03-13
 
 # mlx-lm Architecture
 
@@ -212,6 +212,8 @@ mlx-lm implements several sampling strategies in `sample_utils.py`:
 | Top-k | Sample from the k most likely tokens |
 | Min-p | Filter tokens below a minimum probability threshold |
 | Repetition penalty | Reduce probability of recently generated tokens |
+| Presence penalty | Flat additive penalty for tokens that have appeared |
+| Frequency penalty | Count-scaled additive penalty for repeated tokens |
 | XTC | Extended temperature-controlled sampling |
 
 Samplers are composable and applied in sequence during the `_step` function
