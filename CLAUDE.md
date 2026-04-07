@@ -20,6 +20,9 @@ in the top-level `skills/` directory, auto-discovered by the plugin system.
 | Fine-tune with LoRA | mlx-lm | `/mlx-skills:mlx-lm` |
 | Quantize a model | mlx-lm | `/mlx-skills:mlx-lm` |
 | Set up a local LLM server | mlx-lm | `/mlx-skills:mlx-lm` |
+| Run a vision-language model (VLM) | mlx-lm | `/mlx-skills:mlx-lm` |
+| Use mlx-vlm or TurboQuant | mlx-lm | `/mlx-skills:mlx-lm` |
+| Process images/audio with a model | mlx-lm | `/mlx-skills:mlx-lm` |
 | Speed up my MLX code | fast-mlx | `/mlx-skills:fast-mlx` |
 | Reduce memory usage | fast-mlx | `/mlx-skills:fast-mlx` |
 | Profile performance | fast-mlx | `/mlx-skills:fast-mlx` |
@@ -146,6 +149,12 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 1. `/mlx-lm` loads language model skill
 2. Reference `patterns.md` for LoRA patterns and quantization
 3. Reference `architecture.md` for fine-tuning flow
+
+### "Run a vision-language model"
+1. `/mlx-lm` loads language model skill
+2. Reference `vlm.md` for mlx-vlm architecture, model catalog, TurboQuant
+3. Reference `patterns.md` for Gemma 4 text-side patterns (shared KV, MoE)
+4. Reference `architecture.md` for mlx-vlm cross-reference
 
 ### "Update skills from upstream" (maintainer)
 1. `/update-skills` loads the maintainer workflow skill

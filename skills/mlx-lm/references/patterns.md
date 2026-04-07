@@ -1,4 +1,4 @@
-last updated: 2026-03-13
+last updated: 2026-04-07
 
 # Idiomatic MLX Patterns
 
@@ -226,6 +226,138 @@ shape `(num_heads, output_dims, input_dims)`. It supports quantization via
 The model's `make_cache()` returns `CacheList` pairs (one for the latent, one
 for rope keys) per layer.
 
+### Gemma 4 Architecture Patterns
+
+Gemma 4 introduces several novel patterns useful for custom model development.
+
+**Mixed Attention (sliding + full)**
+
+Layers alternate between sliding window and full attention based on
+`sliding_window_pattern` (default 5 = 4 sliding + 1 full). The layer type
+list is generated at init:
+
+```python
+# ModelArgs.__post_init__
+pattern = ["sliding_attention"] * (self.sliding_window_pattern - 1) + ["full_attention"]
+self.layer_types = (pattern * (num_layers // len(pattern) + 1))[:num_layers]
+```
+
+`make_cache()` only creates caches for non-shared layers, returning
+`RotatingKVCache` for sliding and `KVCache` for full:
+
+```python
+def make_cache(self):
+    first_kv_shared = self.args.num_hidden_layers - self.args.num_kv_shared_layers
+    caches = []
+    for i in range(first_kv_shared):
+        if self.args.layer_types[i] == "full_attention":
+            caches.append(KVCache())
+        else:
+            caches.append(RotatingKVCache(max_size=self.args.sliding_window, keep=0))
+    return caches
+```
+
+**Shared KV Layers**
+
+The last `num_kv_shared_layers` (default 20) layers reuse KV from earlier
+layers of the same type instead of computing their own. The sharing map is
+built at init:
+
+```python
+# Gemma4TextModel.__init__
+self.previous_kvs = list(range(len(self.layers)))
+if config.num_kv_shared_layers > 0:
+    N = len(self.layers)
+    M = N - config.num_kv_shared_layers
+    kvs_by_type = {}
+    for i in range(M):
+        kvs_by_type[self.layers[i].layer_type] = i
+    for j in range(M, N):
+        self.previous_kvs[j] = kvs_by_type[self.layers[j].layer_type]
+```
+
+During forward, shared layers receive `shared_kv` tuple instead of computing
+K/V projections:
+
+```python
+# In Attention.__call__
+if shared_kv is not None:
+    keys, values = shared_kv  # Reuse from earlier layer
+else:
+    keys = self.k_proj(x)     # Compute fresh K/V
+    values = keys if self.use_k_eq_v else self.v_proj(x)
+```
+
+**K-eq-V Optimization**
+
+In full attention layers of 26B/31B models, `attention_k_eq_v=True` makes keys
+equal values, eliminating the V projection entirely:
+
+```python
+self.use_k_eq_v = config.attention_k_eq_v and not self.is_sliding
+if not self.use_k_eq_v:
+    self.v_proj = nn.Linear(dim, self.n_kv_heads * self.head_dim, bias=False)
+```
+
+Each head type gets separate norms: `q_norm` and `k_norm` are `nn.RMSNorm`,
+`v_norm` is `RMSNormNoScale` (no learnable parameters).
+
+**Dual RoPE**
+
+Sliding and full attention layers use different RoPE configurations:
+
+| Parameter | Full Attention | Sliding Attention |
+|-----------|---------------|-------------------|
+| `rope_theta` | 1,000,000 | 10,000 |
+| `partial_rotary_factor` | 0.25 | 1.0 |
+| `rope_type` | proportional | default |
+
+The appropriate config is selected per-layer at init via `rope_parameters[layer_key]`.
+
+**Sparse MoE with SwitchGLU**
+
+The 26B model uses a parallel dense MLP + sparse MoE per layer:
+
+```python
+# In DecoderLayer.__call__ (when enable_moe=True)
+h1 = self.mlp(self.pre_feedforward_layernorm(h))          # Dense MLP
+top_k_indices, top_k_weights = self.router(h)              # Route to experts
+h2 = self.experts(self.pre_feedforward_layernorm_2(h),     # Sparse MoE
+                  top_k_indices, top_k_weights)
+h = h1 + h2  # Sum of dense + sparse
+```
+
+The `Router` uses RMS-normed input with per-expert scaling:
+
+```python
+class Router(nn.Module):
+    def __call__(self, x):
+        x = mx.fast.rms_norm(x, self.scale * self._root_size, self.eps)
+        expert_scores = self.proj(x)
+        top_k_indices = mx.argpartition(expert_scores, kth=-self.config.top_k_experts, axis=-1)
+        top_k_indices = top_k_indices[..., -self.config.top_k_experts:]
+        top_k_weights = mx.softmax(mx.take_along_axis(expert_scores, top_k_indices, axis=-1), axis=-1)
+        top_k_weights = top_k_weights * self.per_expert_scale[top_k_indices]
+        return top_k_indices, top_k_weights
+```
+
+`Experts` wraps `SwitchGLU` (from `switch_layers.py`) with GeGLU activation:
+`geglu(gate, x) = gelu_approx(gate) * x`, compiled with `mx.compile(shapeless=True)`.
+
+**Per-layer Input Gating**
+
+2B/4B models use per-layer input embeddings that gate the hidden state:
+
+```python
+# In DecoderLayer.__call__
+gate = nn.gelu_approx(self.per_layer_input_gate(h))
+gate = mx.multiply(gate, per_layer_input)  # Element-wise with per-layer embedding
+h = residual + self.post_per_layer_input_norm(self.per_layer_projection(gate))
+```
+
+The per-layer embeddings come from a separate `embed_tokens_per_layer` table
+(262K vocab x `num_layers * hidden_size_per_layer_input`), sliced per-layer.
+
 ### Scaled Dot Product Attention
 
 mlx-lm routes through a wrapper that handles quantized vs regular caches:
@@ -389,6 +521,22 @@ cache = BatchRotatingKVCache(max_size=4096, left_padding=[0, 128, 64])
 Note: `BatchRotatingKVCache` uses `mx.depends()` internally to enforce correct
 evaluation ordering between cache reads and writes. This ensures correctness
 when operations on the cache are reordered by the graph scheduler.
+
+### TokenBuffer
+
+Sliding token buffer with pre-allocated storage, used for tracking token
+context (e.g., for multi-token think/tool boundary detection in batch
+generation). Not a KV cache, but follows the same allocation pattern:
+
+```python
+class TokenBuffer:
+    step = 256  # Allocation granularity (same as KVCache)
+
+    def update_and_fetch(self, tokens):
+        # Append tokens, expand buffer in steps if needed
+        # Returns full token sequence up to current size
+        return self._buffer[:end]
+```
 
 ### Cache Factory Pattern
 

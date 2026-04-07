@@ -7,16 +7,18 @@ description: >-
   the mlx skill for that). Triggers on "import mlx_lm", "from mlx_lm import",
   "mlx-lm", "run llama", "run a model on my mac", "generate", "stream_generate",
   "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
-  "huggingface model", or "local LLM". Covers model loading, generation
-  pipelines, caching, quantization, fine-tuning, and server deployment.
+  "huggingface model", "local LLM", "mlx-vlm", "vision-language model", "VLM",
+  "TurboQuant", "multimodal", or "vision model". Covers model loading,
+  generation pipelines, caching, quantization, fine-tuning, server deployment,
+  and vision-language models (via mlx-vlm).
   Invoke with /mlx-skills:mlx-lm.
 license: MIT
 compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.5
-  last_verified: "2026-03-13"
+  version: 0.5.6
+  last_verified: "2026-04-07"
 ---
 
 # mlx-lm
@@ -62,7 +64,7 @@ mlx-lm is the reference implementation for running language models on MLX:
 - **Fine-tuning**: LoRA and DoRA adapters with gradient checkpointing
 - **Prompt caching**: Pre-compute and save/load KV cache state for reuse
 - **Tool calling**: Model-specific function calling parsers for Mistral, Qwen,
-  GLM, Kimi K2, and others
+  GLM, Kimi K2, Gemma 4, and others
 - **Server**: OpenAI-compatible HTTP API via `mlx_lm.server`
 - **17 CLI subcommands**: generate, chat, lora, convert, fuse, benchmark,
   cache_prompt, evaluate, perplexity, manage, awq, dwq, dynamic_quant, gptq,
@@ -118,6 +120,7 @@ packed uint32 weights -- usage is transparent.
 | `ChunkedKVCache` | Sliding window; trims front when exceeding chunk_size |
 | `ArraysCache` | General-purpose indexed cache (e.g., Mamba recurrent states) |
 | `BatchRotatingKVCache` | Rotating cache with batch + per-sequence padding |
+| `TokenBuffer` | Sliding token context buffer (multi-token boundary detection) |
 
 For cache implementation details and the factory pattern, see
 [references/patterns.md](references/patterns.md).
@@ -183,6 +186,8 @@ Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
   flow, server integration
 - [references/cli-reference.md](references/cli-reference.md) -- Complete CLI
   subcommand reference for all 17 mlx_lm commands
+- [references/vlm.md](references/vlm.md) -- mlx-vlm: vision-language models,
+  TurboQuant KV cache quantization, Gemma 4 multimodal, model catalog
 
 ## Remember
 

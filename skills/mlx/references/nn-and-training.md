@@ -1,4 +1,4 @@
-last updated: 2026-03-13
+last updated: 2026-04-07
 
 # nn Module and Training
 
@@ -172,7 +172,7 @@ All available as both `nn.*` layers and `nn.*` functions:
 | Layer | Description |
 |-------|-------------|
 | `nn.RNN(input_size, hidden_size, bias=True, nonlinearity="tanh")` | Vanilla RNN |
-| `nn.GRU(input_size, hidden_size, bias=True)` | Gated recurrent unit |
+| `nn.GRU(input_size, hidden_size, bias=True)` | Gated recurrent unit (separate input/hidden biases) |
 | `nn.LSTM(input_size, hidden_size, bias=True)` | Long short-term memory |
 
 ### Transformer
@@ -185,6 +185,10 @@ All available as both `nn.*` layers and `nn.*` functions:
 | `nn.TransformerDecoder(num_layers, dims, num_heads)` | Decoder stack |
 | `nn.TransformerEncoderLayer(dims, num_heads, ...)` | Single encoder layer |
 | `nn.TransformerDecoderLayer(dims, num_heads, ...)` | Single decoder layer |
+
+Note: `nn.TransformerDecoderLayer` correctly applies post-layer-norm to
+cross-attention outputs (fixed in mlx v0.31.2; earlier versions had incorrect
+norm routing in post-LN cross-attention configuration).
 
 Note: mlx-lm implements custom attention and transformer blocks rather than
 using `nn.MultiHeadAttention`/`nn.Transformer`, because the custom versions

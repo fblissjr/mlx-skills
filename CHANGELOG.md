@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.5.6
+
+### Added
+
+- `skills/mlx-lm/references/vlm.md` -- new reference file for mlx-vlm:
+  TurboQuant KV cache quantization, Gemma 4 multimodal (vision + audio),
+  55+ VLM model catalog, VisionFeatureCache
+- Gemma 4 architecture patterns in `patterns.md`: mixed attention (sliding +
+  full), shared KV layers, K-eq-V optimization, dual RoPE, sparse MoE with
+  SwitchGLU, per-layer input gating, TokenBuffer cache
+- Gemma 4 tool parser (`call:name{...}` format) in `architecture.md`
+- TurboQuant cross-reference in `fast-mlx/llm-optimization.md`
+- `mx.fft.fftfreq`, `mx.fft.rfftfreq`, `mx.printoptions`, `mx.local_streams`,
+  complex sorting in `fundamentals.md`
+- Cross-attention fix note and GRU bias fix note in `nn-and-training.md`
+
+### Changed
+
+- Replaced inline mlx-vlm section in `architecture.md` with cross-reference
+  to new `vlm.md` (48+ -> 55+ architectures)
+- Merged duplicate Tool Calling sections in `architecture.md`
+- Updated all `last_verified` dates to 2026-04-07
+
+### Removed
+
+- Duplicate Tool Calling prose in `architecture.md` (lines 222-229, merged
+  into table section)
+
 ## 0.5.5
 
 ### Removed

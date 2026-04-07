@@ -13,8 +13,8 @@ compatibility: "Requires NVIDIA GPU with CUDA support and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.5
-  last_verified: "2026-03-13"
+  version: 0.5.6
+  last_verified: "2026-04-07"
 ---
 
 # MLX CUDA Backend
@@ -169,6 +169,12 @@ layer = nn.QuantizedLinear(in_dims, out_dims, bits=6, group_size=64)
 
 MLX's CUDA backend now supports building on Windows with cuDNN integration,
 enabling NVIDIA GPU acceleration on Windows systems.
+
+## References
+
+- [references/cuda_ops.md](references/cuda_ops.md) -- CUDA quantized matmul
+  operations: gather_qmm (MoE routing), segmented_mm, bit width support per
+  hardware, split-K optimization
 
 ## Related Skills
 

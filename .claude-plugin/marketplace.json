@@ -11,7 +11,7 @@
       "name": "mlx-skills",
       "source": "./plugins/mlx-skills",
       "description": "Core MLX framework, language model, and performance optimization skills for Apple silicon ML development",
-      "version": "0.5.5"
+      "version": "0.5.6"
     }
   ]
 }

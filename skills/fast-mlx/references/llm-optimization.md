@@ -1,4 +1,4 @@
-last updated: 2026-03-06
+last updated: 2026-04-07
 
 # LLM Optimization Guide
 
@@ -17,6 +17,7 @@ For mlx-lm architecture, generation pipeline, and KV cache internals, load the
 | `KVCache` | General purpose, unlimited context | Grows linearly | Fast (in-place update) |
 | `RotatingKVCache` | Fixed context window (sliding attention) | Bounded | Fast after warmup |
 | `QuantizedKVCache` | Very long sequences (>5K tokens) | ~2-4x reduction | Slower (quantize/dequantize) |
+| `TurboQuantKVCache` (mlx-vlm) | VLM long-context | ~89% reduction | Fused Metal kernels |
 | `BatchKVCache` | Batched generation | Per-sequence tracking | Overhead from padding |
 
 ### KV Cache Quantization
@@ -39,6 +40,14 @@ on `KVCache` converts in-place:
 ```python
 cache.to_quantized(group_size=64, bits=4)
 ```
+
+### TurboQuant (mlx-vlm)
+
+For vision-language models, mlx-vlm provides TurboQuant: fractional-bit KV
+cache quantization (e.g., 3.5 bits = 3-bit keys + 4-bit values) with fused
+Metal kernels that achieve 89% KV cache memory savings at 0.85-1.90x baseline
+speed. It supports MSE, Polar, and Prod codecs. For details, load the `mlx-lm`
+skill and see `references/vlm.md`.
 
 ### Preallocated Buffer Strategy
 

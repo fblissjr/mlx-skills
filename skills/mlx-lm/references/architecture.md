@@ -1,4 +1,4 @@
-last updated: 2026-03-13
+last updated: 2026-04-07
 
 # mlx-lm Architecture
 
@@ -11,11 +11,12 @@ model library for MLX.
 mlx_lm/
   models/
     base.py             BaseModelArgs, create_attention_mask, scaled_dot_product_attention
-    cache.py            KVCache, RotatingKVCache, QuantizedKVCache, BatchKVCache, etc. (all expose .nbytes)
-    rope_utils.py       RoPE variants: Llama3RoPE, YarnRoPE, SuScaledRoPE
+    cache.py            KVCache, RotatingKVCache, QuantizedKVCache, BatchKVCache, TokenBuffer, etc. (all expose .nbytes)
+    rope_utils.py       RoPE variants: Llama3RoPE, YarnRoPE, SuScaledRoPE, initialize_rope()
     mla.py              MultiLinear for Multi-head Latent Attention
     llama.py            Reference model implementation
     deepseek_v3.py      DeepSeek V3 (MLA attention)
+    gemma4_text.py      Gemma 4 (mixed attention, shared KV, MoE, dual RoPE)
     qwen2.py, mistral.py, gemma2.py, ...  (50+ models)
     activations.py      swiglu and other activation functions
     switch_layers.py    MoE (Mixture of Experts) layers
@@ -25,7 +26,7 @@ mlx_lm/
     trainer.py          Training loop, gradient checkpointing
     datasets.py         Data loading and batching
     losses.py           Training loss functions
-  generate.py           generate_step, stream_generate, batch_generate, BatchGenerator
+  generate.py           generate_step, stream_generate, batch_generate, BatchGenerator (multi-token think/tool boundaries)
   utils.py              load(), quantize(), model I/O
   server.py             OpenAI-compatible HTTP server
   sample_utils.py       Temperature, top-p, top-k, min-p, XTC samplers
@@ -219,38 +220,12 @@ mlx-lm implements several sampling strategies in `sample_utils.py`:
 Samplers are composable and applied in sequence during the `_step` function
 within the generation loop.
 
-## Tool Calling
-
-The mlx-lm server supports function/tool calling via model-specific parsers in
-`mlx_lm/tool_parsers/`. Each parser implements `parse_tool_call(text, tools)`
-to extract structured function calls from model output. Available parsers
-include Mistral, Pythonic, GLM-4.7, Kimi K2, LongCat, Qwen3-Coder, and others.
-Chat templates in `mlx_lm/chat_templates/` handle tool message formatting for
-the corresponding models.
-
 ## mlx-vlm
 
-mlx-vlm is a third-party library that extends mlx-lm patterns for
-vision-language models. It supports 48+ VLM architectures including audio
-(Qwen3-Omni-MoE).
-
-### Key Differences from mlx-lm
-
-1. **Two-stage architecture**: Vision encoder + Language model
-2. **Processor-centric**: Depends on HuggingFace Transformers processors for
-   image/audio preprocessing
-3. **Multi-modal inputs**: Both text tokens and image/audio embeddings
-4. **Shared utilities**: Uses mlx-lm's `make_sampler`, `make_logits_processors`,
-   and `maybe_quantize_kv_cache` directly
-
-### Trust Level
-
-mlx-vlm is third-party code. When using its patterns:
-
-- Verify attention implementations match mlx-lm conventions
-- Check that KV cache usage follows the standard pattern
-- Confirm fast ops are used where appropriate
-- Watch for type promotion issues in the vision encoder
+mlx-vlm extends mlx-lm for vision-language models (55+ architectures including
+audio). For architecture details, TurboQuant KV cache quantization, Gemma 4
+multimodal, model catalog, and VisionFeatureCache, see
+[references/vlm.md](references/vlm.md).
 
 ## CLI Subcommand Reference
 
@@ -310,6 +285,7 @@ mlx-lm's server supports function/tool calling via model-specific parsers:
 | `longcat` | LongCat models |
 | `minimax_m2` | MiniMax M2 |
 | `qwen3_coder` | Qwen3-Coder |
+| `gemma4` | Gemma 4 (`call:name{...}` format with `<\|"\|>` delimiters) |
 | `function_gemma` | Gemma function calling |
 | `json_tools` | JSON-based tool calling |
 

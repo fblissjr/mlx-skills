@@ -1,4 +1,4 @@
-last updated: 2026-03-13
+last updated: 2026-04-07
 
 # MLX Fundamentals
 
@@ -141,6 +141,18 @@ other_result = another_computation(y)
 
 The async generation pattern in mlx-lm uses a dedicated `generation_stream`
 and synchronizes explicitly when reading results.
+
+### Thread-Local Streams
+
+`mx.local_streams(n)` creates thread-local streams for use in multi-threaded
+code. Each thread gets its own stream and command encoder, avoiding contention
+on the shared default stream:
+
+```python
+with mx.local_streams(4):
+    # Each thread in this context gets an independent stream
+    results = parallel_map(process_batch, batches)
+```
 
 ## Compilation
 
@@ -341,6 +353,20 @@ result = my_fp16_tensor * mask  # -> float32!
 mask = mx.zeros(shape, dtype=mx.float16)
 result = my_fp16_tensor * mask  # -> float16
 ```
+
+### Array Display
+
+```python
+with mx.printoptions(precision=4, linewidth=120, threshold=100):
+    print(x)  # Formatted array display
+```
+
+Controls formatting for printed arrays, matching NumPy's `np.printoptions`.
+
+### Complex Number Sorting
+
+`mx.sort` and `mx.argsort` support `complex64`, sorting by magnitude then
+phase. This works on both Metal and CUDA backends.
 
 ## Tree Utilities
 
@@ -618,12 +644,15 @@ MLX provides a complete FFT module mirroring NumPy's `np.fft`:
 | `mx.fft.irfft2(a, s, axes)` | Inverse of rfft2 |
 | `mx.fft.rfftn(a, s, axes)` | N-dimensional real-input FFT |
 | `mx.fft.irfftn(a, s, axes)` | Inverse of rfftn |
+| `mx.fft.fftfreq(n, d)` | DFT sample frequencies (spacing `d`, default 1.0) |
+| `mx.fft.rfftfreq(n, d)` | DFT sample frequencies for rfft |
 | `mx.fft.fftshift(a, axes)` | Shift zero-frequency component to center |
 | `mx.fft.ifftshift(a, axes)` | Inverse of fftshift |
 
 All functions accept an optional `stream` parameter. The `n`/`s` parameters
 control the transform size (default: input size along the transformed axes).
 The `rfft` variants exploit real-input symmetry for ~2x memory savings.
+`fftshift`/`ifftshift` accept scalar `axes` (not just sequences).
 
 ## Linear Algebra (mx.linalg)
 
