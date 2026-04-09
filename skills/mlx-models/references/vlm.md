@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-04-09
 
 # mlx-vlm Reference
 
@@ -97,10 +97,19 @@ Conformer architecture (SSCP + 12 Conformer blocks):
 `Gemma4Processor` handles combined image + text + audio inputs:
 
 - Image: aspect-ratio-preserving resize, rescale to [0,1], 280 tokens per image
-- Audio: feature extraction with convolutional subsampling, 750 tokens
+- Audio: mel spectrogram preprocessing with correct feature extraction pipeline,
+  convolutional subsampling, 750 tokens
 - Multi-image support with shape normalization via `group_images_by_shape()`
 - Special tokens: `image_token_id`/`boi_token`/`eoi_token`,
   `audio_token_id`/`boa_token`/`eoa_token`
+
+### Known Fixes (Apr 2026)
+
+- Audio preprocessing: corrected mel feature extraction, weight loading paths,
+  and feature extractor initialization
+- Quantized models: fixed per-layer projection loading for quantized Gemma 4
+- Batched caches: `cache.offset` is now snapshotted to prevent alias mutation
+  when caches are shared across batched operations
 
 ## TurboQuant KV Cache Quantization
 
@@ -176,6 +185,20 @@ State types (NamedTuples): `TurboQuantMSEState`, `TurboQuantProdState`,
 - Two-pass fused decode kernels, single-tile value weighted sum (2x speedup)
 - Hadamard transform integration (RHT forward/inverse)
 - Fused KV quantization: single dispatch for both keys + values
+
+### Race Condition Fix (Apr 2026)
+
+The fused fast-quantize Metal kernels had a race condition in threadgroup
+memory: non-atomic `|=` operations on `packed_shared` caused silent data
+corruption when multiple threads wrote to the same 32-bit packed word. Only
+one thread's contribution survived per word, with zeros elsewhere. This
+produced inverted MSE behavior (4-bit cache was MORE corrupted than 2-bit).
+
+Fix: `threadgroup atomic_uint` with `atomic_store_explicit` /
+`atomic_fetch_or_explicit` / `atomic_load_explicit` (relaxed ordering). After
+the fix, fast and slow quantize paths produce byte-identical packed indices
+for all tested bit-widths (2/3/4/5/6, dim 64 and 128), and MSE is monotone
+in bits as expected.
 
 ## VisionFeatureCache
 

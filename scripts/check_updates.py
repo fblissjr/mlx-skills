@@ -407,8 +407,10 @@ def generate_report(
     lines.append("- `mlx/references/nn-and-training.md` -- if nn layers, losses, optimizers, or schedulers changed")
     lines.append("- `mlx/references/fundamentals.md` -- if core MLX APIs changed")
     lines.append("- `mlx/references/anti-patterns.md` -- if new footguns were discovered")
-    lines.append("- `mlx-lm/references/patterns.md` -- if model patterns changed (cache, attention, generation)")
-    lines.append("- `mlx-lm/references/architecture.md` -- if loading, generation flow, or model registration changed")
+    lines.append("- `mlx-models/references/patterns.md` -- if model patterns changed (cache, attention, generation)")
+    lines.append("- `mlx-models/references/architecture.md` -- if loading, generation flow, or model registration changed")
+    lines.append("- `mlx-models/references/serving.md` -- if server.py changed in mlx-lm or mlx-vlm")
+    lines.append("- `mlx-models/references/vlm.md` -- if mlx-vlm models, TurboQuant, or vision encoders changed")
     lines.append("- `fast-mlx/references/*.md` -- if optimization techniques changed")
     lines.append("")
 

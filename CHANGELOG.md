@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.5.8
+
+### Added
+
+- mlx-vlm CLI reference in `cli-reference.md`: generate, chat, chat_ui,
+  convert, lora commands with key flags
+- mlx-vlm routing examples in `update-skills.md` (turboquant, server, VLM
+  models, lora)
+- Reference staleness warning test (`TestReferenceStaleness`) -- warns at
+  pytest time when reference files are >45 days old
+- mlx-vlm upstream source paths in `review-content.md` (TurboQuant, VLM
+  generation, model base)
+
+### Changed
+
+- Fixed stale upstream paths in `review-content.md`: `mlx-examples/llms/mlx_lm/`
+  -> `mlx-lm/mlx_lm/` (mlx-lm is its own repo now)
+- Consolidated plugin manifests: `plugins/mlx-skills/.claude-plugin/plugin.json`
+  now matches root (added missing `keywords` and `repository` fields)
+- Reviewed 5 stale reference files against upstream (no content changes needed,
+  dates updated to confirm review): porting-guide.md, custom-kernels.md,
+  anti-patterns.md, compute-optimization.md, fast-mlx-guide.md
+
+## 0.5.7
+
+### Added
+
+- `skills/mlx-models/references/serving.md` -- comprehensive serving reference
+  covering both mlx-lm and mlx-vlm server architectures: architecture
+  comparison, BatchGenerator batching, VisionFeatureCache, distributed
+  inference, speculative decoding, CLI flags, deployment patterns
+- "Deploy a local model server" usage scenario in CLAUDE.md
+- TurboQuant race condition fix documentation in `vlm.md` (Metal threadgroup
+  atomic operations)
+- Gemma 4 bug fix notes in `vlm.md`: audio preprocessing, quantized per-layer
+  projection loading, batched cache offset snapshot
+- Gemma 4 tool parser now supports hyphenated function names (noted in
+  `architecture.md`)
+
+### Changed
+
+- **Renamed `mlx-lm` skill to `mlx-models`**: directory `skills/mlx-lm/` ->
+  `skills/mlx-models/`, covering both mlx-lm (text LLMs) and mlx-vlm
+  (vision-language models) under a unified name
+- Updated all cross-references across skills (mlx, fast-mlx), CLAUDE.md
+  routing table, and memory files
+- Server section in SKILL.md now covers both servers with pointer to
+  `serving.md`
+- `architecture.md` server integration section now cross-references
+  `serving.md`
+- `cli-reference.md` server section updated with additional flags and
+  cross-reference to `serving.md`
+- Updated all `last_verified` dates to 2026-04-09
+
 ## 0.5.6
 
 ### Added

@@ -6,7 +6,7 @@ Performance optimization techniques specific to language model inference and
 training on MLX. All patterns sourced from mlx-lm.
 
 For mlx-lm architecture, generation pipeline, and KV cache internals, load the
-`mlx-lm` skill. This guide focuses on optimization techniques.
+`mlx-models` skill. This guide focuses on optimization techniques.
 
 ## KV Cache Optimization
 
@@ -46,7 +46,7 @@ cache.to_quantized(group_size=64, bits=4)
 For vision-language models, mlx-vlm provides TurboQuant: fractional-bit KV
 cache quantization (e.g., 3.5 bits = 3-bit keys + 4-bit values) with fused
 Metal kernels that achieve 89% KV cache memory savings at 0.85-1.90x baseline
-speed. It supports MSE, Polar, and Prod codecs. For details, load the `mlx-lm`
+speed. It supports MSE, Polar, and Prod codecs. For details, load the `mlx-models`
 skill and see `references/vlm.md`.
 
 ### Preallocated Buffer Strategy
@@ -348,7 +348,7 @@ Example: Llama 3.2 3B at 4-bit with 4096 context:
 
 ### Runtime Cache Memory Monitoring
 
-All cache types expose `.nbytes` for memory tracking (see the `mlx-lm` skill's
+All cache types expose `.nbytes` for memory tracking (see the `mlx-models` skill's
 patterns reference for basic usage). In server contexts, use
 `BatchGenerator.prompt_cache_nbytes` to monitor aggregate cache size and
 implement memory-aware load shedding:

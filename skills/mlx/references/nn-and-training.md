@@ -193,7 +193,7 @@ norm routing in post-LN cross-attention configuration).
 Note: mlx-lm implements custom attention and transformer blocks rather than
 using `nn.MultiHeadAttention`/`nn.Transformer`, because the custom versions
 integrate better with KV caching, RoPE variants, and quantization. For mlx-lm's
-implementation patterns, load the `mlx-lm` skill and see `references/patterns.md`.
+implementation patterns, load the `mlx-models` skill and see `references/patterns.md`.
 
 ### Embedding
 

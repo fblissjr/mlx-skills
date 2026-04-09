@@ -26,7 +26,7 @@ claude plugin add /path/to/mlx-skills
 
 ### manual
 
-Copy `skills/mlx`, `skills/mlx-lm`, `skills/fast-mlx`, and `skills/mlx-cuda`
+Copy `skills/mlx`, `skills/mlx-models`, `skills/fast-mlx`, and `skills/mlx-cuda`
 into your assistant's skills directory (e.g., `~/.claude/skills/`).
 
 ## skills
@@ -34,7 +34,7 @@ into your assistant's skills directory (e.g., `~/.claude/skills/`).
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
 | mlx | `import mlx`, `mx.array`, `nn.Module`, "port to mlx", "training loop" | Core framework: lazy eval, unified memory, compile, nn.Module, layers, optimizers, porting |
-| mlx-lm | `import mlx_lm`, `stream_generate`, `KVCache`, "run llama", "local LLM" | Language models: loading, generation, KV cache, quantization, LoRA, serving |
+| mlx-models | `import mlx_lm`, `import mlx_vlm`, `KVCache`, "run llama", "local LLM", "VLM" | Models: loading, generation, KV cache, quantization, LoRA, serving, vision-language |
 | fast-mlx | "optimize mlx", "speed up", "profiling", "reduce memory" | Performance: graph eval, compile, memory management, LLM/diffusion optimization |
 | mlx-cuda | `mx.cuda`, `cuda_kernel`, "NVIDIA GPU", "run mlx on cuda" | CUDA backend: detection, custom CUDA kernels, Metal-to-CUDA porting |
 
@@ -47,13 +47,13 @@ Explicit invocation depends on how you installed:
 ```bash
 # Plugin install (namespaced)
 /mlx-skills:mlx
-/mlx-skills:mlx-lm
+/mlx-skills:mlx-models
 /mlx-skills:fast-mlx
 /mlx-skills:mlx-cuda
 
 # Legacy CLI / manual install (personal skills)
 /mlx
-/mlx-lm
+/mlx-models
 /fast-mlx
 /mlx-cuda
 ```
@@ -68,8 +68,11 @@ Explicit invocation depends on how you installed:
 | mlx | debugging.md | Shape debugging, memory profiling, common errors |
 | mlx | porting-guide.md | PyTorch-to-MLX migration with API mapping tables |
 | mlx | custom-kernels.md | Custom Metal kernels with mx.fast.metal_kernel |
-| mlx-lm | patterns.md | Attention, KV cache, generation, quantization, LoRA, RoPE |
-| mlx-lm | architecture.md | Model loading, generation flow, fine-tuning, server integration |
+| mlx-models | patterns.md | Attention, KV cache, generation, quantization, LoRA, RoPE |
+| mlx-models | architecture.md | Model loading, generation flow, fine-tuning |
+| mlx-models | serving.md | mlx-lm and mlx-vlm server architectures, deployment |
+| mlx-models | vlm.md | Vision-language models, TurboQuant, Gemma 4 multimodal |
+| mlx-models | cli-reference.md | mlx_lm (17 subcommands) and mlx_vlm CLI reference |
 | fast-mlx | fast-mlx-guide.md | Graph eval, type promotion, ops, compile, memory, profiling |
 | fast-mlx | llm-optimization.md | KV cache tuning, prefill chunking, speculative decoding |
 | fast-mlx | dit-optimization.md | Denoising compilation, CFG batching, vision attention |
@@ -118,7 +121,7 @@ skills/                     Skill source (auto-discovered)
   mlx/
     SKILL.md
     references/
-  mlx-lm/
+  mlx-models/
     SKILL.md
     references/
   fast-mlx/

@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-04-09
 
 # mlx-lm CLI Reference
 
@@ -61,14 +61,16 @@ mlx_lm.fuse --model MODEL --adapter-path ADAPTER --save-path OUTPUT
 
 ## server
 
-OpenAI-compatible HTTP server.
+OpenAI-compatible HTTP server. For comprehensive serving documentation
+including both mlx-lm and mlx-vlm servers, architecture comparison, batching,
+and deployment patterns, see [references/serving.md](references/serving.md).
 
 ```bash
 mlx_lm.server --model MODEL --port 8080 --host 0.0.0.0
 ```
 
 Key flags: `--model`, `--port`, `--host`, `--adapter-path`, `--log-level`,
-`--chat-template`, `--pipeline`.
+`--chat-template`, `--pipeline`, `--decode-concurrency`, `--prompt-cache-size`.
 
 Exposes `/v1/chat/completions` and `/v1/completions`.
 
@@ -162,3 +164,78 @@ mlx_lm.dynamic_quant --model MODEL --mlx-path OUTPUT
 ```
 
 Per-token dynamic quantization for variable precision.
+
+---
+
+# mlx-vlm CLI Reference
+
+All commands are invoked as `mlx_vlm.<command>` or `python -m mlx_vlm.<command>`.
+For server details, see [references/serving.md](references/serving.md).
+
+## generate
+
+Generate text from image/audio inputs with a vision-language model.
+
+```bash
+mlx_vlm.generate --model mlx-community/gemma-4-4b-it-4bit \
+    --image photo.jpg --prompt "Describe this image" \
+    --max-tokens 200
+```
+
+Key flags: `--model`, `--image` (repeatable), `--audio` (repeatable),
+`--prompt`, `--system`, `--max-tokens` (default: 100), `--temperature`
+(default: 0.7), `--chat` (multi-turn mode), `--resize-shape`,
+`--prefill-step-size` (default: 512), `--kv-bits`, `--kv-quant-scheme`,
+`--enable-thinking`, `--thinking-budget`, `--adapter-path`.
+
+## chat
+
+Interactive multi-turn chat with vision-language models.
+
+```bash
+mlx_vlm.chat --model mlx-community/idefics2-8b-chatty-4bit
+```
+
+Same generation flags as `generate`, plus `--eos-tokens`,
+`--skip-special-tokens`, `--kv-group-size` (default: 64),
+`--quantized-kv-start` (default: 128).
+
+## convert
+
+Convert HuggingFace vision-language models to MLX format.
+
+```bash
+mlx_vlm.convert --hf-path MODEL --mlx-path OUTPUT --quantize --q-bits 4
+```
+
+Key flags: `--hf-path` / `--model`, `--mlx-path` (default: `mlx_model`),
+`-q` / `--quantize`, `--q-bits`, `--q-group-size`, `--q-mode` (choices:
+affine, mxfp4, nvfp4, mxfp8), `--dtype` (float32/float16/bfloat16),
+`--quant-predicate` (mixed-bit recipes: mixed_2_6, mixed_3_4, etc.),
+`-d` / `--dequantize`, `--upload-repo`.
+
+## lora
+
+Fine-tune vision-language models with LoRA or full weight tuning.
+
+```bash
+mlx_vlm.lora --model-path MODEL --dataset DATASET --iters 1000
+```
+
+Key flags: `--model-path`, `--dataset`, `--learning-rate` (default: 2e-5),
+`--batch-size` (default: 4), `--iters` (default: 1000), `--epochs`,
+`--max-seq-length` (default: 2048), `--lora-rank` (default: 8),
+`--lora-alpha` (default: 16), `--full-finetune` (all weights),
+`--train-vision` (unfreeze vision encoder), `--train-mode` (sft or orpo),
+`--output-path` (default: `adapters.safetensors`), `--adapter-path` (resume).
+
+## chat_ui
+
+Web-based Gradio chat interface.
+
+```bash
+mlx_vlm.chat_ui --model mlx-community/gemma-4-4b-it-4bit
+```
+
+Key flags: `--model`. Temperature, max tokens, top-p, and repetition penalty
+are configured via the Gradio UI controls.

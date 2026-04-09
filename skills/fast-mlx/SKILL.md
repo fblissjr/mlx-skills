@@ -15,8 +15,8 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.6
-  last_verified: "2026-04-07"
+  version: 0.5.8
+  last_verified: "2026-04-09"
 ---
 
 # Fast MLX
@@ -36,14 +36,14 @@ Use `/mlx` instead when you need to:
 - Learn MLX fundamentals
 - Debug errors (not performance issues)
 
-Use `/mlx-lm` instead when you need to:
+Use `/mlx-models` instead when you need to:
 - Set up model loading, generation, or fine-tuning
 
 ## Prerequisites
 
 Load the `mlx` skill first if you need background on lazy evaluation, type
-promotion, or other MLX fundamentals. Load the `mlx-lm` skill for language
-model-specific patterns.
+promotion, or other MLX fundamentals. Load the `mlx-models` skill for language
+model and vision-language model patterns.
 
 ## Workflow
 

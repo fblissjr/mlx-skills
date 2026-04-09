@@ -16,13 +16,13 @@ in the top-level `skills/` directory, auto-discovered by the plugin system.
 | Learn MLX fundamentals | mlx | `/mlx-skills:mlx` |
 | Write a training loop | mlx | `/mlx-skills:mlx` |
 | Debug MLX errors | mlx | `/mlx-skills:mlx` |
-| Run a HuggingFace model on my Mac | mlx-lm | `/mlx-skills:mlx-lm` |
-| Fine-tune with LoRA | mlx-lm | `/mlx-skills:mlx-lm` |
-| Quantize a model | mlx-lm | `/mlx-skills:mlx-lm` |
-| Set up a local LLM server | mlx-lm | `/mlx-skills:mlx-lm` |
-| Run a vision-language model (VLM) | mlx-lm | `/mlx-skills:mlx-lm` |
-| Use mlx-vlm or TurboQuant | mlx-lm | `/mlx-skills:mlx-lm` |
-| Process images/audio with a model | mlx-lm | `/mlx-skills:mlx-lm` |
+| Run a HuggingFace model on my Mac | mlx-models | `/mlx-skills:mlx-models` |
+| Fine-tune with LoRA | mlx-models | `/mlx-skills:mlx-models` |
+| Quantize a model | mlx-models | `/mlx-skills:mlx-models` |
+| Set up a local LLM server | mlx-models | `/mlx-skills:mlx-models` |
+| Run a vision-language model (VLM) | mlx-models | `/mlx-skills:mlx-models` |
+| Use mlx-vlm or TurboQuant | mlx-models | `/mlx-skills:mlx-models` |
+| Process images/audio with a model | mlx-models | `/mlx-skills:mlx-models` |
 | Speed up my MLX code | fast-mlx | `/mlx-skills:fast-mlx` |
 | Reduce memory usage | fast-mlx | `/mlx-skills:fast-mlx` |
 | Profile performance | fast-mlx | `/mlx-skills:fast-mlx` |
@@ -31,7 +31,7 @@ in the top-level `skills/` directory, auto-discovered by the plugin system.
 | Port Metal kernels to CUDA | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Update skills from upstream | update-skills | `/update-skills` |
 | Verify content accuracy | review-content | `/review-content` |
-| Bump version everywhere | sync-versions | `/sync-versions 0.5.4` |
+| Bump version everywhere | sync-versions | `/sync-versions 0.5.8` |
 
 ## Skills and When They Load
 
@@ -55,21 +55,25 @@ pytorch", "training loop", writing/debugging MLX code.
 layers, optimizers, training patterns, debugging, PyTorch-to-MLX and
 NumPy-to-MLX porting.
 
-### mlx-lm (language models)
+### mlx-models (language models + vision-language models)
 
-**Use for:** Running, fine-tuning, or serving existing HuggingFace models.
+**Use for:** Running, fine-tuning, or serving existing HuggingFace models
+(text LLMs via mlx-lm, vision-language models via mlx-vlm).
 
-**Triggers:** `import mlx_lm`, `from mlx_lm import`, `stream_generate`,
-`KVCache`, LoRA, quantization, GGUF, safetensors, "run llama", "run a model
-on my mac", "local LLM", "huggingface model".
+**Triggers:** `import mlx_lm`, `from mlx_lm import`, `import mlx_vlm`,
+`from mlx_vlm import`, `stream_generate`, `KVCache`, LoRA, quantization,
+GGUF, safetensors, "run llama", "run a model on my mac", "local LLM",
+"huggingface model", "vision-language model", "VLM", "TurboQuant",
+"multimodal", "VisionFeatureCache", "mlx server".
 
 **Invocation:**
-- Automatic: scan imports for `mlx_lm` usage
-- Explicit: `/mlx-skills:mlx-lm` (plugin) or `/mlx-lm` (personal skill)
-- From other skills: "load the mlx-lm skill for generation patterns"
+- Automatic: scan imports for `mlx_lm` or `mlx_vlm` usage
+- Explicit: `/mlx-skills:mlx-models` (plugin) or `/mlx-models` (personal skill)
+- From other skills: "load the mlx-models skill for generation patterns"
 
 **What it covers:** model loading, generation pipelines, KV cache,
-quantization, fine-tuning, server deployment.
+quantization, fine-tuning, server deployment (both mlx-lm and mlx-vlm),
+vision-language models, TurboQuant.
 
 ### fast-mlx (performance)
 
@@ -121,7 +125,7 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 ### "Optimize my MLX project"
 1. Claude scans imports for `import mlx`, `from mlx_lm import`, etc.
 2. Loads `mlx` skill for core patterns
-3. Loads `mlx-lm` if mlx-lm imports are present
+3. Loads `mlx-models` if mlx-lm or mlx-vlm imports are present
 4. Loads `fast-mlx` for optimization guidance
 5. Reviews code against anti-patterns and optimization checklist
 
@@ -136,31 +140,40 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 3. Reference `anti-patterns.md` for common mistakes
 
 ### "Set up mlx-lm generation"
-1. `/mlx-lm` loads language model skill
+1. `/mlx-models` loads the model inference skill
 2. Reference `patterns.md` for generation pipeline, KV cache, sampling
 3. Reference `architecture.md` for model loading flow
 
 ### "Speed up my LLM inference"
 1. `/fast-mlx` loads optimization skill
 2. Reference `llm-optimization.md` for KV cache tuning, prefill chunking, speculative decoding
-3. `/mlx-lm` for generation pipeline patterns
+3. `/mlx-models` for generation pipeline patterns
 
 ### "Fine-tune a model with LoRA"
-1. `/mlx-lm` loads language model skill
+1. `/mlx-models` loads the model inference skill
 2. Reference `patterns.md` for LoRA patterns and quantization
 3. Reference `architecture.md` for fine-tuning flow
 
 ### "Run a vision-language model"
-1. `/mlx-lm` loads language model skill
+1. `/mlx-models` loads the model inference skill
 2. Reference `vlm.md` for mlx-vlm architecture, model catalog, TurboQuant
 3. Reference `patterns.md` for Gemma 4 text-side patterns (shared KV, MoE)
 4. Reference `architecture.md` for mlx-vlm cross-reference
+
+### "Deploy a local model server"
+1. `/mlx-models` loads the model inference skill
+2. Reference `serving.md` for both mlx-lm and mlx-vlm server architectures
+3. Reference `cli-reference.md` for server CLI flags
 
 ### "Update skills from upstream" (maintainer)
 1. `/update-skills` loads the maintainer workflow skill
 2. Runs `scripts/check_updates.py --diff` to generate a change report
 3. Analyzes diffs, routes changes to the right reference files
 4. Updates reference files (not SKILL.md), validates, and reports
+5. Bumps version in all 8 version files (see Version files list)
+6. Updates `last_verified` and `last updated` dates on modified files
+7. Adds CHANGELOG.md entry under new version header
+8. Runs `uv run pytest tests/` to verify (catches version mismatches)
 
 ### "Check content accuracy" (maintainer)
 1. `/review-content` loads the content accuracy checker
@@ -169,8 +182,10 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 4. Reports mismatches -- does not auto-fix
 
 ### "Bump project version" (maintainer)
-1. `/sync-versions 0.5.3` loads the version coordinator
-2. Updates version in all 6 locations (pyproject.toml, 4 SKILL.md, plugin.json)
+1. `/sync-versions 0.5.8` loads the version coordinator
+2. Updates version in all 8 locations (pyproject.toml, 4 SKILL.md,
+   .claude-plugin/plugin.json, .claude-plugin/marketplace.json,
+   plugins/mlx-skills/.claude-plugin/plugin.json)
 3. Updates `last_verified` dates, adds CHANGELOG section header
 4. Runs validator and tests to confirm
 
@@ -180,7 +195,8 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 
 - `.claude-plugin/plugin.json` -- root plugin manifest
 - `.claude-plugin/marketplace.json` -- marketplace catalog
-- `plugins/mlx-skills/` -- marketplace plugin wrapper (symlinks to `skills/`)
+- `plugins/mlx-skills/` -- marketplace plugin wrapper (hardlinks to `skills/`,
+  has own `.claude-plugin/plugin.json` that needs separate version bumps)
 - `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
 - `skills/*/references/*.md` -- reference material (loaded on demand)
 - `scripts/check_updates.py` -- upstream change scanner
@@ -193,6 +209,20 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 uv run pytest tests/                  # Run tests
 uv run python scripts/check_updates.py --since 30days  # Check upstream changes
 ```
+
+### Version files (ALL must match on every release)
+
+1. `pyproject.toml` -- `version` field
+2. `skills/mlx/SKILL.md` -- `metadata.version`
+3. `skills/mlx-models/SKILL.md` -- `metadata.version`
+4. `skills/fast-mlx/SKILL.md` -- `metadata.version`
+5. `skills/mlx-cuda/SKILL.md` -- `metadata.version`
+6. `.claude-plugin/plugin.json` -- `version` field
+7. `.claude-plugin/marketplace.json` -- `plugins[0].version`
+8. `plugins/mlx-skills/.claude-plugin/plugin.json` -- `version` field
+
+`uv run pytest tests/` will fail if any version is out of sync.
+Always run tests after version bumps.
 
 Skill validation is handled by the skill-maintainer plugin (`/skill-maintainer:quality`). Install via: `/plugin marketplace add fblissjr/fb-claude-skills` then `/plugin install skill-maintainer@fb-claude-skills`.
 
@@ -216,7 +246,7 @@ Skill validation is handled by the skill-maintainer plugin (`/skill-maintainer:q
 ### Content guidelines
 
 - `mlx` skill: core MLX framework only (no mlx-lm specifics)
-- `mlx-lm` skill: Apple's mlx-lm library only (generation, caching, fine-tuning)
+- `mlx-models` skill: mlx-lm and mlx-vlm (generation, caching, fine-tuning, serving, VLMs)
 - `fast-mlx` skill: performance optimization (profiling, compilation, memory)
 - `mlx-cuda` skill: CUDA backend only (keep separate from Metal content)
 - Avoid duplicating content across skills; use cross-references instead

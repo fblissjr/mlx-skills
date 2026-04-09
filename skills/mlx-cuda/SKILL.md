@@ -13,8 +13,8 @@ compatibility: "Requires NVIDIA GPU with CUDA support and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.6
-  last_verified: "2026-04-07"
+  version: 0.5.8
+  last_verified: "2026-04-09"
 ---
 
 # MLX CUDA Backend

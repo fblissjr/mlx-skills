@@ -6,11 +6,15 @@ Replaces the removed validate.py with proper pytest coverage:
 - Reference file existence and headers
 - Cross-reference validity between skills
 - SKILL.md word count guard
+- Stale skill path detection
+- Reference file staleness warnings
 """
 
 from __future__ import annotations
 
 import re
+import warnings
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -234,6 +238,63 @@ class TestCrossReferences:
                         rel = md_file.relative_to(ROOT)
                         invalid.append(f"{rel}: references non-existent skill '{ref}'")
         assert not invalid, "Invalid cross-references:\n" + "\n".join(invalid)
+
+
+class TestStaleSkillPaths:
+    """Catch references to skill directories that no longer exist."""
+
+    # Directories and files to skip (historical logs, changelogs, URLs)
+    _SKIP = ("CHANGELOG.md", ".venv", "node_modules", ".git", "internal/")
+
+    def test_no_stale_skill_directory_refs(self):
+        """Scan project .md and .py files for paths like skills/<name>/
+        where <name> is not a current skill directory.
+
+        Catches stale references after skill renames or removals."""
+        # Match relative paths like skills/<name>/SKILL.md or
+        # skills/<name>/references/. Excludes URLs (preceded by //) and
+        # absolute paths (preceded by /).
+        pattern = re.compile(r'(?<!/)(?<!//)skills/([a-z][a-z0-9-]+)/(?:SKILL|references)')
+        stale = []
+        for ext in ("*.md", "*.py"):
+            for f in ROOT.rglob(ext):
+                rel = str(f.relative_to(ROOT))
+                if any(skip in rel for skip in self._SKIP):
+                    continue
+                for i, line in enumerate(f.read_text().splitlines(), 1):
+                    for m in pattern.finditer(line):
+                        ref_name = m.group(1)
+                        if ref_name not in SKILL_NAMES:
+                            stale.append(f"{rel}:{i}: references 'skills/{ref_name}/' but no such skill exists")
+        assert not stale, (
+            "Stale skill directory references found:\n" + "\n".join(stale)
+        )
+
+
+class TestReferenceStaleness:
+    """Warn when reference files haven't been updated in over 45 days."""
+
+    MAX_AGE_DAYS = 45
+
+    @pytest.mark.parametrize("skill_name", SKILL_NAMES)
+    def test_reference_dates_not_stale(self, skill_name: str):
+        ref_dir = SKILLS_DIR / skill_name / "references"
+        if not ref_dir.exists():
+            pytest.skip(f"{skill_name} has no references/ directory")
+        stale = []
+        for ref in sorted(ref_dir.glob("*.md")):
+            first_line = ref.read_text().splitlines()[0]
+            m = re.match(r"last updated: (\d{4}-\d{2}-\d{2})", first_line)
+            if m:
+                age = (date.today() - date.fromisoformat(m.group(1))).days
+                if age > self.MAX_AGE_DAYS:
+                    stale.append(f"{ref.name}: {age} days old")
+        if stale:
+            warnings.warn(
+                f"{skill_name} has stale references (>{self.MAX_AGE_DAYS} days):\n"
+                + "\n".join(f"  {s}" for s in stale),
+                stacklevel=1,
+            )
 
 
 class TestWordCount:

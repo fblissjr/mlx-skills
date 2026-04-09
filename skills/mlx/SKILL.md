@@ -15,8 +15,8 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.6
-  last_verified: "2026-04-07"
+  version: 0.5.8
+  last_verified: "2026-04-09"
 ---
 
 # MLX
@@ -84,8 +84,8 @@ promotion rules, see [references/fundamentals.md](references/fundamentals.md).
 | Layer | Package | Trust Level |
 |-------|---------|-------------|
 | Foundation | `mlx` (core) | Authoritative -- this IS the API |
-| Gold Standard | `mlx-lm` | Official reference for LLM patterns |
-| Functional | `mlx-vlm` | Third-party VLM; verify patterns against mlx-lm |
+| Gold Standard | `mlx-lm` | Official reference for LLM patterns (see `mlx-models` skill) |
+| Functional | `mlx-vlm` | Third-party VLM; verify patterns against mlx-lm (see `mlx-models` skill) |
 
 ## Quick Reference: mx.fast Ops
 
@@ -176,8 +176,8 @@ profiling and optimization guides.
 
 ## Related Skills
 
-- **`mlx-lm`** -- mlx-lm patterns: model architecture, generation, KV cache,
-  quantization, LoRA fine-tuning, server
+- **`mlx-models`** -- mlx-lm and mlx-vlm patterns: model architecture,
+  generation, KV cache, quantization, LoRA fine-tuning, server, vision-language
 - **`fast-mlx`** -- Performance optimization: profiling, compilation tuning,
   memory reduction, async pipeline optimization
 - **`mlx-cuda`** -- CUDA backend support for running MLX on NVIDIA GPUs

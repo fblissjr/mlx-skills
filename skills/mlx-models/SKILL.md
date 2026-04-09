@@ -1,44 +1,50 @@
 ---
-name: mlx-lm
+name: mlx-models
 description: >-
-  Apple's official language model library for MLX. Use when running, serving,
-  fine-tuning, or quantizing HuggingFace transformer models on Apple silicon.
-  NOT for writing custom MLX models from scratch or porting PyTorch code (use
-  the mlx skill for that). Triggers on "import mlx_lm", "from mlx_lm import",
-  "mlx-lm", "run llama", "run a model on my mac", "generate", "stream_generate",
-  "KVCache", "LoRA fine-tuning", "model quantization", "GGUF", "safetensors",
-  "huggingface model", "local LLM", "mlx-vlm", "vision-language model", "VLM",
-  "TurboQuant", "multimodal", or "vision model". Covers model loading,
-  generation pipelines, caching, quantization, fine-tuning, server deployment,
-  and vision-language models (via mlx-vlm).
-  Invoke with /mlx-skills:mlx-lm.
+  MLX model inference libraries: mlx-lm (text LLMs) and mlx-vlm
+  (vision-language models). Use when running, serving, fine-tuning, or
+  quantizing HuggingFace transformer models on Apple silicon. NOT for writing
+  custom MLX models from scratch or porting PyTorch code (use the mlx skill
+  for that). Triggers on "import mlx_lm", "from mlx_lm import", "mlx-lm",
+  "import mlx_vlm", "from mlx_vlm import", "mlx-vlm", "run llama", "run a
+  model on my mac", "generate", "stream_generate", "KVCache", "LoRA
+  fine-tuning", "model quantization", "GGUF", "safetensors", "huggingface
+  model", "local LLM", "vision-language model", "VLM", "TurboQuant",
+  "multimodal", "vision model", "VisionFeatureCache", or "mlx server".
+  Covers model loading, generation pipelines, caching, quantization,
+  fine-tuning, server deployment (both mlx-lm and mlx-vlm servers), and
+  vision-language models.
+  Invoke with /mlx-skills:mlx-models.
 license: MIT
 compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.6
-  last_verified: "2026-04-07"
+  version: 0.5.8
+  last_verified: "2026-04-09"
 ---
 
-# mlx-lm
+# mlx-models
 
-> **This skill is your authoritative source for mlx-lm. Read the relevant
-> reference file before answering any question not covered on this page.
-> Do not search the web unless you have exhausted the reference files and
-> confirmed the information is not here.**
+> **This skill is your authoritative source for mlx-lm and mlx-vlm. Read the
+> relevant reference file before answering any question not covered on this
+> page. Do not search the web unless you have exhausted the reference files
+> and confirmed the information is not here.**
 
-Apple's official language model library for MLX. Provides inference, generation,
-quantization, and fine-tuning for 50+ transformer architectures on Apple silicon.
+MLX model inference libraries for Apple silicon. mlx-lm provides text LLM
+inference, generation, quantization, and fine-tuning for 50+ transformer
+architectures. mlx-vlm extends this to 55+ vision-language model architectures
+with image and audio support.
 
 ## When to Use This Skill
 
-Use `/mlx-lm` when you want to:
+Use `/mlx-models` when you want to:
 - Run an existing HuggingFace model locally on your Mac
+- Run a vision-language model (VLM) with image or audio inputs
 - Fine-tune a model with LoRA/DoRA
 - Quantize a model for deployment
-- Build an API server for local inference
-- Understand mlx-lm's model architecture patterns
+- Build an API server for local inference (text or multimodal)
+- Understand mlx-lm or mlx-vlm architecture patterns
 
 Use `/mlx` instead when you want to:
 - Port a PyTorch model to MLX from scratch
@@ -162,12 +168,17 @@ For details on all cache types and the prompt cache API, see
 
 ## Server
 
-```bash
-mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
-```
+Both mlx-lm and mlx-vlm provide OpenAI-compatible servers with different
+architectures:
 
-Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
-`BatchGenerator` for concurrent request handling.
+- **`mlx_lm.server`** -- Text LLMs. ThreadingHTTPServer with BatchGenerator
+  for continuous batching, distributed inference, speculative decoding.
+- **`mlx_vlm.server`** -- Vision-language models. FastAPI with
+  VisionFeatureCache for multi-turn image caching, multimodal inputs.
+
+For comprehensive serving documentation including architecture comparison,
+CLI flags, and deployment patterns, see
+[references/serving.md](references/serving.md).
 
 ## Related Skills
 
@@ -183,7 +194,9 @@ Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
   LoRA, RoPE, sharding
 - [references/architecture.md](references/architecture.md) -- mlx-lm directory
   structure, model loading flow, generation flow, model registration, fine-tuning
-  flow, server integration
+  flow
+- [references/serving.md](references/serving.md) -- Server deployment: mlx-lm
+  and mlx-vlm server architectures, CLI flags, batching, caching, streaming
 - [references/cli-reference.md](references/cli-reference.md) -- Complete CLI
   subcommand reference for all 17 mlx_lm commands
 - [references/vlm.md](references/vlm.md) -- mlx-vlm: vision-language models,
@@ -191,9 +204,9 @@ Exposes `/v1/chat/completions` and `/v1/completions` endpoints. Uses
 
 ## Remember
 
-1. **Load the `mlx` skill first** -- mlx-lm builds on core MLX concepts
+1. **Load the `mlx` skill first** -- mlx-lm and mlx-vlm build on core MLX concepts
 2. **Follow the ModelArgs pattern** -- every model uses `ModelArgs(BaseModelArgs)` + standard interface
 3. **Async pipeline is fragile** -- any sync evaluation inside the step function stalls generation
 4. **Quantization is transparent** -- `nn.QuantizedLinear` is a drop-in for `nn.Linear`
 5. **KV cache choice matters** -- match cache type to the attention pattern
-6. **Read reference files first** -- do not search the web for mlx-lm questions
+6. **Read reference files first** -- do not search the web for mlx-lm or mlx-vlm questions

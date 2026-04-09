@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-04-09
 
 # mlx-lm Architecture
 
@@ -193,14 +193,12 @@ To add a new model to mlx-lm:
 
 ### Server Integration
 
-mlx-lm provides an OpenAI-compatible server:
-
-```bash
-mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
-```
-
-This exposes `/v1/chat/completions` and `/v1/completions` endpoints using
-the `BatchGenerator` for concurrent request handling.
+mlx-lm provides an OpenAI-compatible server (`mlx_lm.server`) with
+BatchGenerator for concurrent request handling. mlx-vlm provides a separate
+FastAPI server (`mlx_vlm.server`) with VisionFeatureCache for multimodal
+inputs. For comprehensive serving documentation including architecture
+comparison, CLI flags, and deployment patterns, see
+[references/serving.md](references/serving.md).
 
 ## Sampling
 
@@ -285,7 +283,7 @@ mlx-lm's server supports function/tool calling via model-specific parsers:
 | `longcat` | LongCat models |
 | `minimax_m2` | MiniMax M2 |
 | `qwen3_coder` | Qwen3-Coder |
-| `gemma4` | Gemma 4 (`call:name{...}` format with `<\|"\|>` delimiters) |
+| `gemma4` | Gemma 4 (`call:name{...}` format with `<\|"\|>` delimiters, supports hyphenated function names) |
 | `function_gemma` | Gemma function calling |
 | `json_tools` | JSON-based tool calling |
 
