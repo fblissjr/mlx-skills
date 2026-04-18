@@ -30,7 +30,12 @@ share/python-wheels/
 *.egg
 MANIFEST
 update-coderef.sh
-.claude/
+
+# Claude Code: track shared project-level config (skills/, commands/, agents/,
+# settings.json) but keep per-user local overrides private.
+.claude/settings.local.json
+.claude/*.local.md
+
 internal/
 
 # PyInstaller

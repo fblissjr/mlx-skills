@@ -1,3 +1,5 @@
+<!-- last updated: 2026-04-18 -->
+
 # MLX Skills - Development Guide
 
 ## Project Overview
@@ -5,6 +7,84 @@
 This is a Claude Code plugin that teaches AI coding assistants how to write
 correct, performant MLX code. Skills are markdown files with YAML frontmatter
 in the top-level `skills/` directory, auto-discovered by the plugin system.
+
+## Maintenance Routines (Read First)
+
+Keeping reference files in sync with upstream MLX is the primary maintenance
+burden. Use the slash commands in this order. Do NOT drive `check_updates.py`
+by hand -- it only produces a diff report (Step 1 of a 6-step workflow).
+
+### Routine upstream sync
+
+```
+/update-skills
+```
+
+Runs `scripts/check_updates.py --diff`, categorizes diffs (new APIs, changed
+signatures, removals, behavior changes), routes each change to the right
+`references/*.md` file, edits in place, then validates with
+`/skill-maintainer:quality` + `uv run pytest tests/`.
+
+The skill is defined at `.claude/skills/update-skills.md` and is the source of
+truth for the routing rules (which upstream path maps to which reference file).
+
+### Pre-release accuracy audit
+
+```
+/review-content
+```
+
+Read-only cross-check of reference files against upstream source (CLI flags,
+function signatures, API tables). Reports mismatches but does not edit
+anything. Use before `/sync-versions` to catch drift the scanner missed.
+
+### Version bump
+
+```
+/sync-versions 0.5.9
+```
+
+Atomically updates all 8 version locations (see "Version files" below),
+refreshes `last_verified` dates, adds a CHANGELOG.md section header, runs
+pytest. Skill definition: `.claude/skills/sync-versions.md`.
+
+### Always-available hygiene check
+
+```
+/skill-maintainer:quality
+```
+
+Generic skill linter from the skill-maintainer plugin: spec compliance, token
+budgets (4K warn, 8K critical), body size (<500 lines), freshness (<30 days),
+description WHAT+WHEN quality. Already invoked by `/update-skills` and
+`/sync-versions`. Safe to run anytime.
+
+### Optional: broader maintenance pass
+
+```
+/skill-maintainer:init-maintenance   # one-time setup
+/skill-maintainer:maintain            # 4-phase run
+```
+
+`init-maintenance` creates `.skill-maintainer/` with a `config.json` listing
+Claude Code doc URLs and tracked repos. `maintain` then does:
+1. Pull tracked local repos (e.g., `coderef/` clones).
+2. Check Claude Code upstream docs (skills/plugins/hooks guides) for drift.
+3. Run quality report.
+4. Propose best-practices updates.
+
+This is complementary to `/update-skills` -- it does NOT track MLX source
+files. Use it to catch changes in Claude Code authoring conventions, not MLX
+APIs. Skip it unless you want broader hygiene.
+
+### Release checklist
+
+1. `/update-skills` -- sync upstream.
+2. `/review-content` -- audit accuracy.
+3. `/sync-versions X.Y.Z` -- bump version.
+4. Fill in CHANGELOG.md entries under the new header.
+5. `uv run pytest tests/` -- final gate.
+6. Commit.
 
 ## Which Skill Do I Need?
 
@@ -35,7 +115,7 @@ in the top-level `skills/` directory, auto-discovered by the plugin system.
 
 ## Skills and When They Load
 
-There are four skills. Each has a `SKILL.md` (always loaded when triggered)
+There are 4 skills. Each has a `SKILL.md` (always loaded when triggered)
 and `references/` files (loaded on demand).
 
 ### mlx (core framework)
@@ -200,15 +280,23 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 - `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
 - `skills/*/references/*.md` -- reference material (loaded on demand)
 - `scripts/check_updates.py` -- upstream change scanner
-- `.claude/skills/` -- project-level maintainer skills (not part of plugin)
+- `.claude/skills/` -- project-level maintainer skills (tracked in git,
+  loaded by Claude Code when working in this repo; not part of the
+  installable plugin manifest). Contains `update-skills.md`,
+  `review-content.md`, `sync-versions.md`. `.claude/settings.local.json`
+  stays gitignored for per-user permissions.
 - `tests/` -- pytest suite
 
 ### Commands
 
 ```
-uv run pytest tests/                  # Run tests
-uv run python scripts/check_updates.py --since 30days  # Check upstream changes
+uv run pytest tests/                  # Run tests (version consistency, staleness)
+uv run python scripts/check_updates.py --since 30days  # Plumbing: diff report only.
+                                                        # Prefer /update-skills.
 ```
+
+For the full maintenance workflow, see "Maintenance Routines" at the top of
+this file. Do not invoke `check_updates.py` as a substitute for `/update-skills`.
 
 ### Version files (ALL must match on every release)
 

@@ -4,6 +4,30 @@
 
 ### Added
 
+- Top-of-file "maintaining this plugin" section in README and "Maintenance
+  Routines" section in CLAUDE.md. Documents the slash-command-first workflow
+  (`/update-skills`, `/review-content`, `/sync-versions`, `/skill-maintainer:quality`)
+  and clarifies that `scripts/check_updates.py` is plumbing, not a workflow.
+  Adds a release checklist.
+- Drift-detection pytest gates in `tests/test_skill_structure.py`:
+  `TestRoutingCoverage` (every `WATCHED_FILES` path has a rule in
+  `update-skills.md`; arrow targets resolve on disk), `TestVersionFilesDocumented`
+  (numeric claims like "all 8 version files" match `len(VERSION_FILES)`;
+  every `VERSION_FILES` entry appears in `sync-versions.md`), and
+  `TestSkillListDocumented` (skill-count claims match `len(SKILL_NAMES)`;
+  every skill is named in CLAUDE.md).
+- `PYTEST_STRICT=1` environment flag promotes `TestReferenceStaleness` from
+  a warning to a hard failure. `/sync-versions` now runs in strict mode so a
+  release is gated on reference freshness.
+- 20 previously undocumented `WATCHED_FILES` entries now have routing rules
+  in `.claude/skills/update-skills.md` Step 3; routing entries are grouped
+  by target reference file for readability.
+- `scripts/check_updates.py` module docstring now explicitly marks itself as
+  plumbing for `/update-skills` and notes the `WATCHED_FILES` routing invariant.
+- Maintainer slash commands are now tracked in git: `.claude/skills/update-skills.md`,
+  `.claude/skills/review-content.md`, `.claude/skills/sync-versions.md` ship with
+  the repo so contributors get the maintenance workflow automatically on clone.
+  Only `.claude/settings.local.json` remains gitignored (per-user permissions).
 - mlx-vlm CLI reference in `cli-reference.md`: generate, chat, chat_ui,
   convert, lora commands with key flags
 - mlx-vlm routing examples in `update-skills.md` (turboquant, server, VLM

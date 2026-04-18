@@ -2,6 +2,13 @@
 """
 Scan upstream MLX repos for recent changes and produce a structured update report.
 
+IMPORTANT: This script is plumbing for the /update-skills slash command.
+Running it directly only gives you a diff report -- no analysis, no reference
+file edits, no validation. For the full 6-step maintenance workflow
+(scan -> analyze -> route -> edit refs -> guard SKILL.md -> validate), invoke
+/update-skills from Claude Code. Run this standalone only when debugging the
+scanner itself.
+
 By default, fetches directly from GitHub (shallow bare clones scoped to the
 time window). No local setup required.
 
@@ -14,6 +21,10 @@ Usage:
 
 Output: Markdown report with watched file changes, potential breaking changes,
 notable commits, and suggested skill updates.
+
+Invariant: every path in WATCHED_FILES must have a routing rule in
+.claude/skills/update-skills.md Step 3. The TestRoutingCoverage pytest class
+enforces this -- adding a new watched file without a routing rule fails tests.
 """
 
 import argparse

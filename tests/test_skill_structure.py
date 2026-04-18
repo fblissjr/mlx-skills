@@ -7,12 +7,18 @@ Replaces the removed validate.py with proper pytest coverage:
 - Cross-reference validity between skills
 - SKILL.md word count guard
 - Stale skill path detection
-- Reference file staleness warnings
+- Reference file staleness warnings (strict mode via PYTEST_STRICT=1)
+- Routing coverage: every WATCHED_FILES entry has a rule in update-skills.md
+- Doc-count invariants: skill count and version-file count claims in docs
+  must match the actual constants.
 """
 
 from __future__ import annotations
 
+import importlib.util
+import os
 import re
+import sys
 import warnings
 from datetime import date
 from pathlib import Path
@@ -22,6 +28,32 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "skills"
 SKILL_NAMES = sorted(p.name for p in SKILLS_DIR.iterdir() if p.is_dir() and (p / "SKILL.md").exists())
+
+
+def _load_check_updates():
+    """Import scripts/check_updates.py as a module.
+
+    scripts/ has no __init__.py, so load via importlib. Cached via sys.modules.
+    """
+    if "check_updates" in sys.modules:
+        return sys.modules["check_updates"]
+    path = ROOT / "scripts" / "check_updates.py"
+    spec = importlib.util.spec_from_file_location("check_updates", path)
+    if spec is None or spec.loader is None:
+        pytest.fail(f"Could not load {path} as a module")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["check_updates"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _strict_mode() -> bool:
+    """PYTEST_STRICT=1 gates release-blocking checks (staleness, etc).
+
+    /sync-versions sets this so a release fails loudly if references are stale.
+    Routine dev runs with strict off so warnings don't block iteration.
+    """
+    return os.environ.get("PYTEST_STRICT", "").strip() in ("1", "true", "True")
 
 REQUIRED_FRONTMATTER = {"name", "description", "license", "metadata"}
 REQUIRED_METADATA = {"author", "version", "last_verified"}
@@ -272,7 +304,11 @@ class TestStaleSkillPaths:
 
 
 class TestReferenceStaleness:
-    """Warn when reference files haven't been updated in over 45 days."""
+    """Warn when reference files haven't been updated in over 45 days.
+
+    Normal mode: emits a warning. PYTEST_STRICT=1: fails the test. /sync-versions
+    runs with PYTEST_STRICT=1 so a release is gated on reference freshness.
+    """
 
     MAX_AGE_DAYS = 45
 
@@ -290,11 +326,14 @@ class TestReferenceStaleness:
                 if age > self.MAX_AGE_DAYS:
                     stale.append(f"{ref.name}: {age} days old")
         if stale:
-            warnings.warn(
+            msg = (
                 f"{skill_name} has stale references (>{self.MAX_AGE_DAYS} days):\n"
-                + "\n".join(f"  {s}" for s in stale),
-                stacklevel=1,
+                + "\n".join(f"  {s}" for s in stale)
             )
+            if _strict_mode():
+                pytest.fail(msg)
+            else:
+                warnings.warn(msg, stacklevel=1)
 
 
 class TestWordCount:
@@ -307,4 +346,172 @@ class TestWordCount:
         word_count = len(body.split())
         assert word_count <= MAX_BODY_WORDS, (
             f"{skill_name}/SKILL.md body is {word_count} words (limit: {MAX_BODY_WORDS})"
+        )
+
+
+# Drift-detection gates: invariants between machine-readable sources
+# (WATCHED_FILES, VERSION_FILES, SKILL_NAMES) and the prose that documents
+# them. These fail loudly so a maintainer can't silently add a watched file
+# without a routing rule, a skill without docs, or a version location without
+# touching /sync-versions.
+
+UPDATE_SKILLS_PATH = ROOT / ".claude" / "skills" / "update-skills.md"
+SYNC_VERSIONS_PATH = ROOT / ".claude" / "skills" / "sync-versions.md"
+CLAUDE_MD_PATH = ROOT / "CLAUDE.md"
+README_PATH = ROOT / "README.md"
+
+# Routing prose refers to watched paths with `python/mlx/` stripped. Match
+# against both the full and stripped form.
+_PATH_PREFIXES = ("python/mlx/",)
+
+
+def _watched_path_candidates(path: str) -> list[str]:
+    """Return the path forms a routing rule might use to refer to this file."""
+    candidates = [path]
+    for prefix in _PATH_PREFIXES:
+        if path.startswith(prefix):
+            candidates.append(path[len(prefix):])
+    return candidates
+
+
+class TestRoutingCoverage:
+    """Every watched upstream file needs a routing rule in update-skills.md."""
+
+    def test_every_watched_file_has_routing_rule(self):
+        """WATCHED_FILES -> update-skills.md routing coverage.
+
+        For each file in scripts/check_updates.py WATCHED_FILES, at least one
+        backticked form of its path must appear in the routing section.
+        """
+        mod = _load_check_updates()
+        routing_text = UPDATE_SKILLS_PATH.read_text()
+
+        missing = []
+        for repo, files in mod.WATCHED_FILES.items():
+            for path in files:
+                candidates = _watched_path_candidates(path)
+                if not any(f"`{c}`" in routing_text for c in candidates):
+                    missing.append(f"{repo}: {path}")
+
+        assert not missing, (
+            "WATCHED_FILES entries with no routing rule in update-skills.md:\n"
+            + "\n".join(f"  {m}" for m in missing)
+            + "\nAdd a rule under Step 3 or remove the entry from WATCHED_FILES."
+        )
+
+    def test_routing_targets_exist(self):
+        """Every routing arrow `-> target/path.md` must resolve on disk.
+
+        Matches lines like:  `source.py` -> `mlx/references/patterns.md`
+        The target path is relative to skills/.
+        """
+        routing_text = UPDATE_SKILLS_PATH.read_text()
+        arrow_pattern = re.compile(r"->\s*`([^`]+\.md)`")
+        targets = set(arrow_pattern.findall(routing_text))
+
+        missing = []
+        for target in sorted(targets):
+            # Targets are like "mlx/references/patterns.md" (relative to skills/)
+            # or "skills/mlx-cuda/SKILL.md" (absolute-from-root, rare).
+            if target.startswith("skills/"):
+                resolved = ROOT / target
+            else:
+                resolved = SKILLS_DIR / target
+            if not resolved.exists():
+                missing.append(f"{target} (expected at {resolved.relative_to(ROOT)})")
+
+        assert not missing, (
+            "Routing targets that don't exist on disk:\n"
+            + "\n".join(f"  {m}" for m in missing)
+        )
+
+
+class TestVersionFilesDocumented:
+    """Numeric claims about version-file count must match VERSION_FILES."""
+
+    def test_version_file_count_matches_docs(self):
+        """`all N version files` / `N locations` claims must equal len(VERSION_FILES)."""
+        expected = len(VERSION_FILES)
+        claim_pattern = re.compile(
+            r"\ball (\d+) (?:version files?|locations?|version locations?)\b",
+            re.IGNORECASE,
+        )
+
+        mismatches = []
+        for doc in (CLAUDE_MD_PATH, README_PATH, SYNC_VERSIONS_PATH, UPDATE_SKILLS_PATH):
+            if not doc.exists():
+                continue
+            text = doc.read_text()
+            for match in claim_pattern.finditer(text):
+                claim = int(match.group(1))
+                if claim != expected:
+                    rel = doc.relative_to(ROOT)
+                    mismatches.append(
+                        f"{rel}: claims '{match.group(0)}' but VERSION_FILES has {expected} entries"
+                    )
+
+        assert not mismatches, (
+            "Documentation numbers out of sync with VERSION_FILES:\n"
+            + "\n".join(f"  {m}" for m in mismatches)
+        )
+
+    def test_sync_versions_skill_lists_all_files(self):
+        """Every VERSION_FILES entry (by relative path) must appear in sync-versions.md."""
+        text = SYNC_VERSIONS_PATH.read_text()
+        missing = []
+        for path in VERSION_FILES:
+            rel = str(path.relative_to(ROOT))
+            if rel not in text:
+                missing.append(rel)
+
+        assert not missing, (
+            "VERSION_FILES entries not mentioned in sync-versions.md:\n"
+            + "\n".join(f"  {m}" for m in missing)
+            + "\nAdd each missing path to Step 3 of the skill."
+        )
+
+
+class TestSkillListDocumented:
+    """Numeric claims about skill count must match len(SKILL_NAMES)."""
+
+    def test_skill_count_matches_docs(self):
+        """`N skills` claims in CLAUDE.md and README.md must equal len(SKILL_NAMES).
+
+        Only numeric claims are checked; written-out numbers ('four skills')
+        should be normalized to digits so drift is detectable.
+        """
+        expected = len(SKILL_NAMES)
+        # Require a word boundary before the number and a word boundary / space
+        # before 'skill' so we don't match e.g. '0.5.8' or 'all 4 SKILL.md'.
+        claim_pattern = re.compile(r"\b(\d+) skills\b", re.IGNORECASE)
+
+        mismatches = []
+        for doc in (CLAUDE_MD_PATH, README_PATH):
+            if not doc.exists():
+                continue
+            text = doc.read_text()
+            for match in claim_pattern.finditer(text):
+                claim = int(match.group(1))
+                if claim != expected:
+                    rel = doc.relative_to(ROOT)
+                    mismatches.append(
+                        f"{rel}: claims '{match.group(0)}' but SKILL_NAMES has {expected} entries"
+                    )
+
+        assert not mismatches, (
+            "Documentation numbers out of sync with SKILL_NAMES:\n"
+            + "\n".join(f"  {m}" for m in mismatches)
+        )
+
+    def test_all_skills_mentioned_in_claude_md(self):
+        """Every SKILL_NAMES entry must be named in CLAUDE.md.
+
+        Catches the case where a new skill was added under skills/ but
+        CLAUDE.md's routing tables weren't updated.
+        """
+        text = CLAUDE_MD_PATH.read_text()
+        missing = [name for name in SKILL_NAMES if name not in text]
+        assert not missing, (
+            f"Skills not mentioned in CLAUDE.md: {missing}.\n"
+            "Add to the 'Which Skill Do I Need?' and 'Skills and When They Load' sections."
         )

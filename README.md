@@ -1,3 +1,5 @@
+<!-- last updated: 2026-04-18 -->
+
 # MLX Skills
 
 > Originally forked from [awni/mlx-skills](https://github.com/awni/mlx-skills)
@@ -9,6 +11,36 @@ idiomatic patterns, and performance tuning.
 Built following the [skill best practices checklist](https://github.com/fblissjr/fb-claude-skills/blob/main/tools/skill-maintainer/references/best_practices.md)
 from fb-claude-skills: token budgets, description precision, progressive
 disclosure, and spec compliance.
+
+## maintaining this plugin (read first)
+
+MLX moves fast. Keeping these skills accurate is the whole point of this repo.
+Use the slash commands -- don't drive the scripts by hand.
+
+| When | Command | What it does |
+|------|---------|--------------|
+| Routine upstream sync | `/update-skills` | Full 6-step workflow: runs `check_updates.py --diff`, analyzes diffs, routes changes into `references/*.md`, validates, runs tests. This is the one you want 95% of the time. |
+| Before a release | `/review-content` | Read-only audit of reference files vs. upstream source (CLI flags, signatures, API tables). Reports mismatches; does not auto-fix. |
+| Bump version | `/sync-versions 0.5.9` | Atomically bumps all 8 version files, updates `last_verified`, adds CHANGELOG header, runs tests. |
+| Quality check | `/skill-maintainer:quality` | Spec compliance, token budgets, body size, freshness, description quality. Safe to run anytime. Already wired into `/update-skills` and `/sync-versions`. |
+| One-time setup (optional) | `/skill-maintainer:init-maintenance` | Adds `.skill-maintainer/` config. Enables `/skill-maintainer:maintain` (broader hygiene pass: Claude Code doc drift, tracked-repo pulls, best-practices review). |
+
+`scripts/check_updates.py` is plumbing called by `/update-skills`. Running it
+standalone only gives you a diff report -- no edits, no validation. Prefer
+the slash command.
+
+The maintainer slash commands (`/update-skills`, `/review-content`,
+`/sync-versions`) live at `.claude/skills/*.md` in this repo and load
+automatically when Claude Code is invoked from the project directory -- no
+separate install step. `.claude/settings.local.json` is per-user and
+gitignored.
+
+Install the skill-maintainer plugin once (for `/skill-maintainer:quality`):
+
+```bash
+/plugin marketplace add fblissjr/fb-claude-skills
+/plugin install skill-maintainer@fb-claude-skills
+```
 
 ## installation
 
@@ -80,31 +112,27 @@ Explicit invocation depends on how you installed:
 
 ## validation
 
-Skill validation is handled by the skill-maintainer plugin:
+`/skill-maintainer:quality` is the primary validator (see install note in
+"maintaining this plugin" above). It checks spec compliance, token budgets,
+body size, freshness, and description quality.
 
-```bash
-# Install the plugin (once)
-/plugin marketplace add fblissjr/fb-claude-skills
-/plugin install skill-maintainer@fb-claude-skills
-
-# Run quality check
-/skill-maintainer:quality
-```
-
-Or run tests directly:
+Pytest covers version consistency and reference freshness:
 
 ```bash
 uv run pytest tests/                  # run test suite
 ```
 
-## maintenance
+## release checklist
 
-Skills are based on patterns from actual MLX source code. Check for upstream
-changes:
+The full path from "upstream MLX changed" to "shipped a new version":
 
-```bash
-uv run python scripts/check_updates.py --since 30days
-```
+1. `/update-skills` -- sync reference files with upstream (runs scanner,
+   routes diffs, edits refs, validates).
+2. `/review-content` -- sanity check reference accuracy before cutting.
+3. `/sync-versions X.Y.Z` -- bump all 8 version files, add CHANGELOG header.
+4. Fill in CHANGELOG.md entries for the new version.
+5. `uv run pytest tests/` -- final gate (catches version mismatches).
+6. Commit.
 
 ## structure
 

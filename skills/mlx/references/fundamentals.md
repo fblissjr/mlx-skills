@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-04-18
 
 # MLX Fundamentals
 
@@ -138,6 +138,10 @@ other_result = another_computation(y)
 - `mx.eval(x)` synchronizes: waits for x and all its dependencies
 - `mx.synchronize()` waits for all outstanding work on all streams
 - `mx.synchronize(stream)` waits for all work on a specific stream
+- `mx.clear_streams()` tears down streams explicitly before process/thread
+  exit. Optional on macOS/Linux (cleanup happens implicitly), but required
+  on Windows and in threaded code that creates streams in worker threads
+  and joins them before the interpreter shuts down.
 
 The async generation pattern in mlx-lm uses a dedicated `generation_stream`
 and synchronizes explicitly when reading results.
