@@ -144,8 +144,9 @@ The full path from "upstream MLX changed" to "shipped a new version":
 2. `/review-content` -- sanity check reference accuracy before cutting.
 3. `/sync-versions X.Y.Z` -- bump all 8 version files, add CHANGELOG header.
 4. Fill in CHANGELOG.md entries for the new version.
-5. `uv run pytest tests/` -- final gate (catches version mismatches).
-6. Commit.
+5. `PYTEST_STRICT=1 uv run pytest tests/` -- final gate (version consistency
+   + fails on stale references >45 days).
+6. Commit. The pre-commit hook verifies the version bump.
 
 ## structure
 
@@ -170,7 +171,17 @@ skills/                     Skill source (auto-discovered)
     references/
   mlx-cuda/
     SKILL.md
+.claude/
+  skills/                   Maintainer workflows (tracked):
+    update-skills.md          upstream sync
+    review-content.md         accuracy audit
+    sync-versions.md          version bump
+  settings.local.json       Per-user permissions (gitignored)
+.githooks/
+  pre-commit                Version-bump gate
 scripts/
-  check_updates.py          Upstream change scanner
+  check_updates.py          Upstream change scanner (plumbing)
 tests/
+CHANGELOG.md
+pyproject.toml
 ```
