@@ -21,7 +21,7 @@ Use the slash commands -- don't drive the scripts by hand.
 |------|---------|--------------|
 | Routine upstream sync | `/update-skills` | Full 6-step workflow: runs `check_updates.py --diff`, analyzes diffs, routes changes into `references/*.md`, validates, runs tests. This is the one you want 95% of the time. |
 | Before a release | `/review-content` | Read-only audit of reference files vs. upstream source (CLI flags, signatures, API tables). Reports mismatches; does not auto-fix. |
-| Bump version | `/sync-versions 0.5.9` | Atomically bumps all 8 version files, updates `last_verified`, adds CHANGELOG header, runs tests. |
+| Bump version | `/sync-versions 0.5.10` | Atomically bumps all 8 version files, updates `last_verified`, adds CHANGELOG header, runs tests. |
 | Quality check | `/skill-maintainer:quality` | Spec compliance, token budgets, body size, freshness, description quality. Safe to run anytime. Already wired into `/update-skills` and `/sync-versions`. |
 | One-time setup (optional) | `/skill-maintainer:init-maintenance` | Adds `.skill-maintainer/` config. Enables `/skill-maintainer:maintain` (broader hygiene pass: Claude Code doc drift, tracked-repo pulls, best-practices review). |
 
@@ -41,6 +41,19 @@ Install the skill-maintainer plugin once (for `/skill-maintainer:quality`):
 /plugin marketplace add fblissjr/fb-claude-skills
 /plugin install skill-maintainer@fb-claude-skills
 ```
+
+Enable the pre-commit version-bump gate once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook at `.githooks/pre-commit` blocks commits that touch shipped paths
+(`skills/`, `scripts/`, `.claude-plugin/`, `plugins/`) unless
+`pyproject.toml` version differs from HEAD. Commits limited to tests, docs,
+`.claude/skills/`, or other non-shipped paths pass through. Bypass an
+individual commit with `git commit --no-verify` when the change genuinely
+doesn't warrant a bump.
 
 ## installation
 

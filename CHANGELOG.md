@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.8
+## 0.5.9
 
 ### Added
 
@@ -24,10 +24,24 @@
   by target reference file for readability.
 - `scripts/check_updates.py` module docstring now explicitly marks itself as
   plumbing for `/update-skills` and notes the `WATCHED_FILES` routing invariant.
-- Maintainer slash commands are now tracked in git: `.claude/skills/update-skills.md`,
-  `.claude/skills/review-content.md`, `.claude/skills/sync-versions.md` ship with
-  the repo so contributors get the maintenance workflow automatically on clone.
-  Only `.claude/settings.local.json` remains gitignored (per-user permissions).
+- Maintainer slash commands now tracked in git:
+  `.claude/skills/update-skills.md`, `.claude/skills/review-content.md`,
+  `.claude/skills/sync-versions.md` ship with the repo so contributors get
+  the maintenance workflow automatically on clone. Only
+  `.claude/settings.local.json` remains gitignored (per-user permissions).
+- Upstream sync (30-day window): `mx.clear_streams()` noted in
+  `fundamentals.md` (PR ml-explore/mlx#3395). Other mlx/mlx-lm/mlx-vlm
+  commits in this window are bug fixes that don't change documented APIs.
+- Pre-commit hook `.githooks/pre-commit` blocks commits that touch shipped
+  paths (`skills/`, `scripts/`, `.claude-plugin/`, `plugins/`) unless
+  `pyproject.toml` version was bumped. Enable per-clone with
+  `git config core.hooksPath .githooks`. Bypass with `--no-verify` when a
+  shipped change genuinely doesn't warrant a bump.
+
+## 0.5.8
+
+### Added
+
 - mlx-vlm CLI reference in `cli-reference.md`: generate, chat, chat_ui,
   convert, lora commands with key flags
 - mlx-vlm routing examples in `update-skills.md` (turboquant, server, VLM

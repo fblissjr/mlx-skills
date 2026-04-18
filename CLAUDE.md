@@ -77,13 +77,26 @@ This is complementary to `/update-skills` -- it does NOT track MLX source
 files. Use it to catch changes in Claude Code authoring conventions, not MLX
 APIs. Skip it unless you want broader hygiene.
 
+### Version bump gate (pre-commit hook)
+
+Commits touching `skills/`, `scripts/`, `.claude-plugin/`, or `plugins/`
+require a `pyproject.toml` version bump. Enforced by `.githooks/pre-commit`
+(enable once: `git config core.hooksPath .githooks`). Commits limited to
+tests, docs, `.claude/skills/`, or `internal/` are unaffected. Bypass with
+`--no-verify` if a shipped-path change doesn't warrant a user-visible bump
+(e.g., comment fix).
+
+The hook only checks that `pyproject.toml` version changed. `TestVersionConsistency`
+in the pytest suite verifies all 8 version files agree -- so the intended
+flow is: `/sync-versions X.Y.Z` (updates all 8 locations) then commit.
+
 ### Release checklist
 
 1. `/update-skills` -- sync upstream.
 2. `/review-content` -- audit accuracy.
-3. `/sync-versions X.Y.Z` -- bump version.
+3. `/sync-versions X.Y.Z` -- bump version (required by pre-commit hook).
 4. Fill in CHANGELOG.md entries under the new header.
-5. `uv run pytest tests/` -- final gate.
+5. `PYTEST_STRICT=1 uv run pytest tests/` -- final gate (ref freshness).
 6. Commit.
 
 ## Which Skill Do I Need?
@@ -111,7 +124,7 @@ APIs. Skip it unless you want broader hygiene.
 | Port Metal kernels to CUDA | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Update skills from upstream | update-skills | `/update-skills` |
 | Verify content accuracy | review-content | `/review-content` |
-| Bump version everywhere | sync-versions | `/sync-versions 0.5.8` |
+| Bump version everywhere | sync-versions | `/sync-versions 0.5.10` |
 
 ## Skills and When They Load
 
@@ -262,7 +275,7 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 4. Reports mismatches -- does not auto-fix
 
 ### "Bump project version" (maintainer)
-1. `/sync-versions 0.5.8` loads the version coordinator
+1. `/sync-versions 0.5.10` loads the version coordinator
 2. Updates version in all 8 locations (pyproject.toml, 4 SKILL.md,
    .claude-plugin/plugin.json, .claude-plugin/marketplace.json,
    plugins/mlx-skills/.claude-plugin/plugin.json)

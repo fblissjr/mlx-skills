@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Pre-commit hook: require pyproject.toml version bump when shipped paths change.
+#
+# Shipped paths are anything a plugin consumer receives on install:
+#   skills/, scripts/, .claude-plugin/, plugins/
+#
+# Changes confined to tests/, docs, .claude/skills/, internal/, .githooks/,
+# README.md, CHANGELOG.md, or CLAUDE.md pass through without requiring a bump.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Bypass (if intentional): git commit --no-verify
+
+set -euo pipefail
+
+shipped_re='^(skills/|scripts/|\.claude-plugin/|plugins/)'
+changed=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E "$shipped_re" || true)
+
+if [ -z "$changed" ]; then
+    exit 0
+fi
+
+staged_ver=$(git show :pyproject.toml 2>/dev/null | sed -nE 's/^version = "([^"]+)".*/\1/p' | head -1)
+head_ver=$(git show HEAD:pyproject.toml 2>/dev/null | sed -nE 's/^version = "([^"]+)".*/\1/p' | head -1 || echo "")
+
+if [ -z "$staged_ver" ]; then
+    echo "pre-commit: could not read pyproject.toml version from the staged tree." >&2
+    exit 1
+fi
+
+if [ "$staged_ver" = "$head_ver" ]; then
+    {
+        echo "pre-commit: this commit touches shipped paths but pyproject.toml"
+        echo "            version is still $staged_ver."
+        echo ""
+        echo "Shipped files in this commit:"
+        echo "$changed" | sed 's/^/    /'
+        echo ""
+        echo "Bump the version so plugin consumers can tell something changed:"
+        echo "    /sync-versions <next-version>        (from Claude Code)"
+        echo ""
+        echo "Or, if this commit should not trigger a bump (comment fix,"
+        echo "whitespace, internal refactor with no user-visible effect):"
+        echo "    git commit --no-verify"
+    } >&2
+    exit 1
+fi
+
+exit 0
