@@ -1,0 +1,16 @@
+{
+  "$comment": "Project-shared Claude Code config. Per-user overrides go in settings.local.json (gitignored).",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python ${CLAUDE_PROJECT_DIR}/hooks/sync_plugin_skills_on_edit.py"
+          }
+        ]
+      }
+    ]
+  }
+}

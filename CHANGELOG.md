@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.5.10
+
+### Fixed
+
+- Claude Desktop installs showed "This plugin doesn't have any skills or
+  agents" for 0.5.5-0.5.9 because `plugins/mlx-skills/skills` was a symlink
+  pointing outside the plugin subtree. Claude's plugin cache preserves
+  symlinks without dereferencing, so the installed plugin had a dangling
+  link. Replaced with a real-file mirror, regenerated from top-level
+  `skills/` by `scripts/sync_plugin_skills.py`.
+
+### Added
+
+- `scripts/sync_plugin_skills.py` with `--check` mode (exit-non-zero on
+  drift) wired into pytest (`TestPluginSkillsMirror`) and the pre-commit
+  hook so the mirror can never silently drift again.
+- `TestInstallSmoke` -- scans the whole plugin subtree for any symlink
+  and validates frontmatter on every plugin-side `SKILL.md`. Generalizes
+  the 0.5.5 regression to catch the whole class of "installed plugin is
+  missing content" bugs.
+- `TestManifestSchemas` -- validates `plugin.json` and `marketplace.json`
+  parse (via `orjson`) and contain required keys before commit.
+- PostToolUse hook (`hooks/sync_plugin_skills_on_edit.py`, wired via
+  `.claude/settings.json`) auto-syncs the plugin mirror whenever a file
+  under `skills/` is edited in-session, so the commit path stays
+  frictionless.
+- `/sync-versions` skill grew Step 3i and updated Step 4 to run the
+  mirror sync after SKILL.md edits, keeping releases drift-free by
+  construction.
+- `orjson` dev dependency (per project convention).
+
+### Changed
+
+- CLAUDE.md "Key files" entry for `plugins/mlx-skills/` now correctly
+  describes the real-file mirror (previously said "hardlinks", which was
+  wrong on both counts). Added a "Defense layers for the plugin mirror"
+  section documenting the four overlapping gates.
+
 ## 0.5.9
 
 ### Added

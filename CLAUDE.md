@@ -290,26 +290,62 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 
 - `.claude-plugin/plugin.json` -- root plugin manifest
 - `.claude-plugin/marketplace.json` -- marketplace catalog
-- `plugins/mlx-skills/` -- marketplace plugin wrapper (hardlinks to `skills/`,
-  has own `.claude-plugin/plugin.json` that needs separate version bumps)
-- `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body)
+- `plugins/mlx-skills/` -- marketplace plugin wrapper. `skills/` inside it is
+  a REAL copy of top-level `skills/`, regenerated from the canonical source
+  by `scripts/sync_plugin_skills.py`. Not a symlink: Claude's plugin cache
+  preserves symlinks without dereferencing, so a link pointing outside the
+  plugin subtree resolves to nothing on installs, which is why Claude
+  Desktop showed "no skills" through 0.5.5-0.5.9. Has its own
+  `.claude-plugin/plugin.json` that needs separate version bumps.
+- `skills/*/SKILL.md` -- skill definitions (YAML frontmatter + body). Edit
+  these; the plugin copy is downstream.
 - `skills/*/references/*.md` -- reference material (loaded on demand)
+- `scripts/sync_plugin_skills.py` -- mirrors top-level `skills/` into
+  `plugins/mlx-skills/skills/`. `--check` mode exits non-zero on drift and
+  is wired into pytest + the pre-commit hook.
 - `scripts/check_updates.py` -- upstream change scanner
 - `.claude/skills/` -- project-level maintainer skills (tracked in git,
   loaded by Claude Code when working in this repo; not part of the
   installable plugin manifest). Contains `update-skills.md`,
-  `review-content.md`, `sync-versions.md`. `.claude/settings.local.json`
-  stays gitignored for per-user permissions.
-- `.githooks/pre-commit` -- version-bump gate. Enable per clone with
-  `git config core.hooksPath .githooks`.
+  `review-content.md`, `sync-versions.md`.
+- `.claude/settings.json` -- shared Claude Code config (tracked).
+  Configures the PostToolUse hook that auto-syncs the plugin mirror
+  after Edit/Write/MultiEdit under `skills/`.
+- `.claude/settings.local.json` -- per-user overrides (gitignored).
+- `hooks/sync_plugin_skills_on_edit.py` -- the PostToolUse hook body.
+  Reads tool payload on stdin; if a file under `skills/` was touched,
+  runs `scripts/sync_plugin_skills.py`. Silent on no-op.
+- `.githooks/pre-commit` -- version-bump gate AND mirror-drift gate.
+  Enable per clone with `git config core.hooksPath .githooks`.
 - `tests/` -- pytest suite
 - `internal/` -- gitignored scratch / session logs
   (`internal/log/log_YYYY-MM-DD.md`)
 
+### Defense layers for the plugin mirror
+
+Claude Desktop broke through 0.5.5-0.5.9 because a symlink pointing outside
+the plugin subtree dangled on install. Four overlapping gates now prevent
+the whole class of bug:
+
+1. **PostToolUse hook** (`hooks/sync_plugin_skills_on_edit.py`) -- auto-runs
+   the sync script when Claude edits anything under `skills/` in-session.
+2. **pytest** -- `TestPluginSkillsMirror` asserts no symlink + byte-parity;
+   `TestInstallSmoke` walks the whole plugin tree for ANY symlink and
+   validates every plugin-side `SKILL.md` frontmatter; `TestManifestSchemas`
+   validates `plugin.json` and `marketplace.json` parse and have required
+   keys.
+3. **Pre-commit hook** (`.githooks/pre-commit`) -- blocks commits touching
+   `skills/` or the mirror if the sync script's `--check` mode reports
+   drift.
+4. **`/sync-versions` skill** -- Step 3i runs the sync after bumping SKILL.md
+   versions; Step 4 re-runs it after updating `last_verified` dates.
+
 ### Commands
 
 ```
-uv run pytest tests/                  # Run tests (version consistency, staleness)
+uv run pytest tests/                              # Run tests (version consistency, staleness, plugin mirror)
+uv run python scripts/sync_plugin_skills.py      # Refresh plugins/mlx-skills/skills/ from skills/
+uv run python scripts/sync_plugin_skills.py --check  # Verify mirror is current (CI + pre-commit use this)
 uv run python scripts/check_updates.py --since 30days  # Plumbing: diff report only.
                                                         # Prefer /update-skills.
 ```
@@ -334,6 +370,19 @@ this file. Do not invoke `check_updates.py` as a substitute for `/update-skills`
   false positive -- MLX's array evaluator is not Python's builtin. Narrow
   the Edit so that substring isn't in either side of the diff, or split
   the edit into chunks that avoid it.
+- The Write tool may report success but the file evaporates between
+  commands when writing to a newly-created directory outside the
+  sandbox's writable paths. Symptom: `ls` shows the dir missing even
+  though Write said "File created successfully". Fix: create via
+  `cat > <path> <<EOF ... EOF` in a Bash call with
+  `dangerouslyDisableSandbox: true`, then Write-tool edits to the
+  same path will persist normally.
+- A failing PostToolUse hook configured in `.claude/settings.json`
+  blocks ALL subsequent Edit/Write/MultiEdit calls in the session,
+  not just the one that triggered it. If you see
+  "PostToolUse:Edit hook blocking error" on unrelated edits, the
+  quickest recovery is `rm .claude/settings.json` (or rename it),
+  fix the hook body, then restore the config.
 
 ### Version files (ALL must match on every release)
 

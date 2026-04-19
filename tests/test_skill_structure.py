@@ -30,21 +30,25 @@ SKILLS_DIR = ROOT / "skills"
 SKILL_NAMES = sorted(p.name for p in SKILLS_DIR.iterdir() if p.is_dir() and (p / "SKILL.md").exists())
 
 
-def _load_check_updates():
-    """Import scripts/check_updates.py as a module.
+def _load_script_module(stem: str):
+    """Load scripts/<stem>.py as a module.
 
-    scripts/ has no __init__.py, so load via importlib. Cached via sys.modules.
+    scripts/ has no __init__.py, so use importlib. Cached via sys.modules.
     """
-    if "check_updates" in sys.modules:
-        return sys.modules["check_updates"]
-    path = ROOT / "scripts" / "check_updates.py"
-    spec = importlib.util.spec_from_file_location("check_updates", path)
+    if stem in sys.modules:
+        return sys.modules[stem]
+    path = ROOT / "scripts" / f"{stem}.py"
+    spec = importlib.util.spec_from_file_location(stem, path)
     if spec is None or spec.loader is None:
         pytest.fail(f"Could not load {path} as a module")
     module = importlib.util.module_from_spec(spec)
-    sys.modules["check_updates"] = module
+    sys.modules[stem] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _load_check_updates():
+    return _load_script_module("check_updates")
 
 
 def _strict_mode() -> bool:
@@ -468,6 +472,138 @@ class TestVersionFilesDocumented:
             "VERSION_FILES entries not mentioned in sync-versions.md:\n"
             + "\n".join(f"  {m}" for m in missing)
             + "\nAdd each missing path to Step 3 of the skill."
+        )
+
+
+class TestPluginSkillsMirror:
+    """plugins/mlx-skills/skills/ must be a byte-identical copy of skills/.
+
+    Claude's plugin cache preserves symlinks without dereferencing, so any
+    symlink pointing outside the plugin subtree resolves to nothing at
+    runtime. The mirror must be real files, synced via
+    scripts/sync_plugin_skills.py.
+    """
+
+    PLUGIN_SKILLS_DIR = ROOT / "plugins" / "mlx-skills" / "skills"
+
+    def test_not_a_symlink(self):
+        """The plugin skills directory must be a real directory, not a link."""
+        assert self.PLUGIN_SKILLS_DIR.exists(), (
+            f"{self.PLUGIN_SKILLS_DIR.relative_to(ROOT)} is missing. "
+            f"Run: uv run python scripts/sync_plugin_skills.py"
+        )
+        assert not self.PLUGIN_SKILLS_DIR.is_symlink(), (
+            f"{self.PLUGIN_SKILLS_DIR.relative_to(ROOT)} is a symlink. "
+            f"Claude's plugin cache does not dereference symlinks whose "
+            f"targets sit outside the plugin subtree, so the installed "
+            f"plugin ends up with no skills. Replace with a real copy: "
+            f"rm that path, then run "
+            f"uv run python scripts/sync_plugin_skills.py"
+        )
+
+    def test_plugin_skills_match_source(self):
+        """Byte-level parity with top-level skills/."""
+        sync = _load_script_module("sync_plugin_skills")
+        added, removed, changed = sync._diff(sync.SOURCE, sync.TARGET)
+        assert not (added or removed or changed), (
+            "plugins/mlx-skills/skills/ has drifted from skills/. "
+            "Run: uv run python scripts/sync_plugin_skills.py\n"
+            + sync._format_report(added, removed, changed)
+        )
+
+
+class TestInstallSmoke:
+    """Verifies the plugin subtree Claude would actually ship:
+
+    - no symlinks anywhere (any symlink whose target sits outside the
+      subtree will dangle on install)
+    - every plugin-side SKILL.md has valid frontmatter
+    """
+
+    PLUGIN_ROOT = ROOT / "plugins" / "mlx-skills"
+
+    def test_no_symlinks_anywhere_in_plugin_tree(self):
+        links = [p for p in self.PLUGIN_ROOT.rglob("*") if p.is_symlink()]
+        assert not links, (
+            "Symlinks found under plugins/mlx-skills/ (will dangle after "
+            "install because Claude's plugin cache does not dereference "
+            "symlinks whose targets sit outside the plugin subtree):\n"
+            + "\n".join(f"  {p.relative_to(ROOT)} -> {os.readlink(p)}" for p in links)
+            + "\nReplace each with real files. If the source lives in "
+            "skills/, run: uv run python scripts/sync_plugin_skills.py"
+        )
+
+    # NB: no separate frontmatter check for the plugin copy -- TestPluginSkillsMirror
+    # guarantees byte parity with skills/, and TestFrontmatterValidity validates
+    # skills/, so plugin-side validity is transitive.
+
+
+class TestManifestSchemas:
+    """Plugin manifests must be valid JSON with the fields Claude needs.
+
+    A typo in .claude-plugin/plugin.json or marketplace.json surfaces at
+    install time with zero diagnostic information. These tests catch
+    malformed manifests pre-commit.
+    """
+
+    PLUGIN_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
+    MARKETPLACE_MANIFEST = ROOT / ".claude-plugin" / "marketplace.json"
+    PLUGIN_WRAPPER_MANIFEST = (
+        ROOT / "plugins" / "mlx-skills" / ".claude-plugin" / "plugin.json"
+    )
+
+    PLUGIN_REQUIRED = {"name", "version", "description", "author"}
+    MARKETPLACE_REQUIRED = {"name", "owner", "plugins"}
+    MARKETPLACE_PLUGIN_REQUIRED = {"name", "source", "description", "version"}
+
+    def _load(self, path: Path) -> dict:
+        import orjson
+
+        try:
+            return orjson.loads(path.read_bytes())
+        except orjson.JSONDecodeError as exc:
+            pytest.fail(f"{path.relative_to(ROOT)}: invalid JSON -- {exc}")
+
+    @pytest.mark.parametrize(
+        "manifest_attr",
+        ["PLUGIN_MANIFEST", "PLUGIN_WRAPPER_MANIFEST"],
+    )
+    def test_plugin_manifest_required_fields(self, manifest_attr: str):
+        path = getattr(self, manifest_attr)
+        data = self._load(path)
+        missing = self.PLUGIN_REQUIRED - data.keys()
+        assert not missing, (
+            f"{path.relative_to(ROOT)}: missing required fields {missing}"
+        )
+
+    def test_marketplace_manifest_required_fields(self):
+        data = self._load(self.MARKETPLACE_MANIFEST)
+        missing = self.MARKETPLACE_REQUIRED - data.keys()
+        assert not missing, (
+            f"{self.MARKETPLACE_MANIFEST.relative_to(ROOT)}: "
+            f"missing required fields {missing}"
+        )
+
+        plugins = data.get("plugins", [])
+        assert plugins, "marketplace.json has empty plugins list"
+        for i, plugin in enumerate(plugins):
+            plugin_missing = self.MARKETPLACE_PLUGIN_REQUIRED - plugin.keys()
+            assert not plugin_missing, (
+                f"marketplace.json plugins[{i}]: missing {plugin_missing}"
+            )
+
+    def test_marketplace_source_resolves(self):
+        """plugins[].source must be a path that actually exists on disk."""
+        data = self._load(self.MARKETPLACE_MANIFEST)
+        missing = []
+        for i, plugin in enumerate(data.get("plugins", [])):
+            src = plugin.get("source", "")
+            resolved = (ROOT / src).resolve()
+            if not resolved.exists():
+                missing.append(f"plugins[{i}].source = {src!r} -> {resolved}")
+        assert not missing, (
+            "marketplace.json sources that don't resolve on disk:\n"
+            + "\n".join(f"  {m}" for m in missing)
         )
 
 

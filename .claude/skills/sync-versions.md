@@ -78,6 +78,19 @@ In `plugins[0].version`:
 "version": "X.Y.Z"
 ```
 
+### 3i. Mirror the edited SKILL.md files into the plugin copy
+
+Steps 3b-3e edited the canonical `skills/*/SKILL.md` files. The plugin at
+`plugins/mlx-skills/skills/` is a real-file mirror that now has stale versions.
+Run the sync script to propagate:
+
+```
+uv run python scripts/sync_plugin_skills.py
+```
+
+The pre-commit hook and the `TestPluginSkillsMirror` pytest will block the
+release if this step is skipped.
+
 ## Step 4 -- Update last_verified dates
 
 Set `last_verified` to today's date (YYYY-MM-DD) in the `metadata` block of
@@ -87,6 +100,9 @@ all four SKILL.md files:
 metadata:
   last_verified: "YYYY-MM-DD"
 ```
+
+Then re-run `uv run python scripts/sync_plugin_skills.py` so the plugin
+copy picks up the new dates too.
 
 ## Step 5 -- Update CHANGELOG.md
 
