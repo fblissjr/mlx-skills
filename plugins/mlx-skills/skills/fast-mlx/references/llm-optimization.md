@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # LLM Optimization Guide
 
@@ -86,7 +86,7 @@ generate_step(user_prompt, model, prompt_cache=cache)
 
 ### MLA Cache Optimization
 
-Models using Multi-head Latent Attention (MLA), such as DeepSeek V3, store
+Models using Multi-head Latent Attention (MLA), such as DeepSeek V3.2, store
 compressed latent vectors instead of full K/V per head. This dramatically
 reduces cache memory:
 
@@ -184,8 +184,9 @@ while len(prompt) > 1:
 The `mx.clear_cache()` call is important -- without it, intermediate buffers
 from different chunk sizes accumulate.
 
-The `--prefill-step-size <N>` CLI flag (on `mlx_lm.generate` and the server)
-controls chunk size without code changes. Tune this based on prompt length
+The `--prefill-step-size <N>` CLI flag (on `mlx_lm.server`) controls chunk
+size without code changes; `mlx_lm.generate` does not expose this flag and
+uses the `generate_step` default of 2048. Tune this based on prompt length
 and available memory.
 
 ### Prefill Batch Size

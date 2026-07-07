@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # MLX Anti-Patterns
 
@@ -412,8 +412,8 @@ result = W @ x
 # SLOW: separate matmul and add
 result = x @ W.T + b
 
-# FAST: fused operation
-result = mx.addmm(b, x, W)
+# FAST: fused operation -- mx.addmm(c, a, b) computes beta*c + alpha*(a @ b)
+result = mx.addmm(b, x, W.T)
 ```
 
 ## QQLinear Mode Mistakes

@@ -1,4 +1,4 @@
-last updated: 2026-04-18
+last updated: 2026-07-07
 
 # MLX Fundamentals
 
@@ -148,15 +148,22 @@ and synchronizes explicitly when reading results.
 
 ### Thread-Local Streams
 
-`mx.local_streams(n)` creates thread-local streams for use in multi-threaded
-code. Each thread gets its own stream and command encoder, avoiding contention
-on the shared default stream:
+`mx.new_thread_local_stream(device)` creates a stream unique to the calling
+thread, useful in multi-threaded code so each thread gets its own command
+encoder instead of contending on the shared default stream:
 
 ```python
-with mx.local_streams(4):
-    # Each thread in this context gets an independent stream
-    results = parallel_map(process_batch, batches)
+def worker(batch):
+    s = mx.new_thread_local_stream(mx.gpu)
+    with mx.stream(s):
+        return process_batch(batch)
+
+results = parallel_map(worker, batches)
 ```
+
+Call `mx.clear_streams()` at the end of a worker thread to destroy the
+streams it created, particularly in threaded code that creates streams in
+worker threads and joins them before the interpreter shuts down.
 
 ## Compilation
 
@@ -361,11 +368,13 @@ result = my_fp16_tensor * mask  # -> float16
 ### Array Display
 
 ```python
-with mx.printoptions(precision=4, linewidth=120, threshold=100):
+with mx.printoptions(precision=4):
     print(x)  # Formatted array display
 ```
 
-Controls formatting for printed arrays, matching NumPy's `np.printoptions`.
+Unlike NumPy's `np.printoptions`, MLX only supports the `precision` option
+(decimal places). Use `mx.set_printoptions(precision=4)` to set it globally,
+or `mx.get_printoptions()` to read the current value.
 
 ### Complex Number Sorting
 
@@ -589,7 +598,7 @@ MLX supports distributed communication via `mx.distributed`:
 | `mx.distributed.send(x, dst, group)` | Send to a specific rank |
 | `mx.distributed.recv(shape, dtype, src, group)` | Receive from a specific rank |
 | `mx.distributed.recv_like(x, src, group)` | Receive array with same shape/dtype as x |
-| `mx.distributed.sum_scatter(x, group)` | Sum-reduce then scatter equal chunks to each process |
+| `mx.distributed.sum_scatter(x, group)` | Sum-reduce then scatter equal chunks to each process (NCCL backend only) |
 
 ### sum_scatter for Pipeline Parallelism
 
@@ -604,23 +613,26 @@ local_grads = mx.distributed.sum_scatter(grads, group=group)
 ```
 
 More memory-efficient than `all_sum` + slice because the full summed tensor
-never materializes on any single process.
+never materializes on any single process. Currently only supported on the
+NCCL backend.
 
 ## Quantization
 
 ### nn.quantize
 
 ```python
-nn.quantize(model, group_size=None, bits=None, class_predicate=None, mode="affine")
+nn.quantize(model, group_size=None, bits=None, *, mode="affine", quantize_input=False, class_predicate=None)
 ```
 
 Quantize model weights in-place. Replaces `nn.Linear` layers with
-`nn.QuantizedLinear`. The `mode` parameter selects the quantization scheme
-(`"affine"`, `"mxfp4"`, `"nvfp4"`, `"mxfp8"`); `group_size` and `bits`
-default to `None` and are determined by the mode when not specified (e.g.,
-`affine` defaults to `group_size=64, bits=4`). The `class_predicate` function
-controls which layers to quantize (default: all `nn.Linear` and `nn.Embedding`
-layers).
+`nn.QuantizedLinear` (or `nn.QQLinear` if `quantize_input=True`). The `mode`
+parameter selects the quantization scheme (`"affine"`, `"mxfp4"`, `"nvfp4"`,
+`"mxfp8"`); `group_size` and `bits` default to `None` and are determined by
+the mode when not specified (e.g., `affine` defaults to `group_size=64,
+bits=4`). `quantize_input=True` is only supported for the `"nvfp4"` and
+`"mxfp8"` modes. The `class_predicate` function controls which layers to
+quantize (default: any layer defining a `to_quantized()` method, i.e.
+`nn.Linear` and `nn.Embedding`).
 
 ```python
 # Quantize all linear layers to 4-bit
@@ -696,19 +708,24 @@ mx.export_to_dot("graph.dot", model, mx.zeros((1, 784)))
 
 | Function | Description |
 |----------|-------------|
+| `mx.get_active_memory()` | Currently allocated bytes |
+| `mx.get_peak_memory()` | Peak allocation since last reset |
+| `mx.reset_peak_memory()` | Reset peak memory counter |
+| `mx.get_cache_memory()` | Cached (freed but held) bytes |
+| `mx.set_memory_limit(n)` | Soft limit; allocations beyond this may fail or page |
+| `mx.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
+| `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents paging for large models) |
+| `mx.clear_cache()` | Release all cached buffers back to the system |
 | `mx.metal.is_available()` | Check if Metal backend is available |
-| `mx.metal.get_active_memory()` | Currently allocated bytes |
-| `mx.metal.get_peak_memory()` | Peak allocation since last reset |
-| `mx.metal.reset_peak_memory()` | Reset peak memory counter |
-| `mx.metal.get_cache_memory()` | Cached (freed but held) bytes |
-| `mx.metal.set_memory_limit(n)` | Soft limit; allocations beyond this may fail or page |
-| `mx.metal.set_cache_limit(n)` | Max bytes to keep in the buffer cache |
-| `mx.metal.clear_cache()` | Clear GPU memory cache (same as `mx.clear_cache()`) |
 | `mx.metal.start_capture(path)` | Start Metal GPU trace capture |
 | `mx.metal.stop_capture()` | Stop Metal GPU trace capture |
 | `mx.metal.device_info()` | Metal-specific device properties dict (prefer `mx.device_info()` for portable code) |
-| `mx.set_wired_limit(n)` | Pin memory in physical RAM (prevents paging for large models) |
-| `mx.clear_cache()` | Release all cached buffers back to the system |
+
+Note: `get_active_memory`, `get_peak_memory`, `reset_peak_memory`,
+`get_cache_memory`, `set_memory_limit`, `set_cache_limit`, `set_wired_limit`,
+and `clear_cache` live at the top-level `mx.*` namespace, not under
+`mx.metal.*` -- only capture/availability/device-info helpers remain
+Metal-specific.
 
 ## FP8 Quantization
 

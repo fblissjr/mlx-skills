@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # Debugging MLX Code
 
@@ -115,13 +115,16 @@ If your async pipeline stalls:
 import mlx.core as mx
 
 # Check current allocation
-print(f"Active: {mx.metal.get_active_memory() / 1e9:.2f} GB")
-print(f"Peak:   {mx.metal.get_peak_memory() / 1e9:.2f} GB")
-print(f"Cache:  {mx.metal.get_cache_memory() / 1e9:.2f} GB")
+print(f"Active: {mx.get_active_memory() / 1e9:.2f} GB")
+print(f"Peak:   {mx.get_peak_memory() / 1e9:.2f} GB")
+print(f"Cache:  {mx.get_cache_memory() / 1e9:.2f} GB")
 
 # Reset peak tracking
-mx.metal.reset_peak_memory()
+mx.reset_peak_memory()
 ```
+
+Note: these memory functions live at the top-level `mx.*` namespace, not
+under `mx.metal.*`.
 
 ### Common Memory Issues
 
@@ -154,7 +157,7 @@ def step(x, y):
 ```python
 # Variable-size computation caches grow unboundedly
 # Check with:
-print(f"Cache: {mx.metal.get_cache_memory() / 1e9:.2f} GB")
+print(f"Cache: {mx.get_cache_memory() / 1e9:.2f} GB")
 
 # Fix: periodic cache clearing
 mx.clear_cache()

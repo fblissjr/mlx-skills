@@ -15,8 +15,8 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.10
-  last_verified: "2026-04-19"
+  version: 0.5.11
+  last_verified: "2026-07-07"
 ---
 
 # Fast MLX

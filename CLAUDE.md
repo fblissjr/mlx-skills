@@ -44,7 +44,7 @@ anything. Use before `/sync-versions` to catch drift the scanner missed.
 /sync-versions 0.5.10
 ```
 
-Atomically updates all 8 version locations (see "Version files" below),
+Atomically updates all 10 version locations (see "Version files" below),
 refreshes `last_verified` dates, adds a CHANGELOG.md section header, runs
 pytest. Skill definition: `.claude/skills/sync-versions.md`. Required before
 committing any change under `skills/`, `scripts/`, `.claude-plugin/`, or
@@ -89,8 +89,8 @@ tests, docs, `.claude/skills/`, or `internal/` are unaffected. Bypass with
 (e.g., comment fix).
 
 The hook only checks that `pyproject.toml` version changed. `TestVersionConsistency`
-in the pytest suite verifies all 8 version files agree -- so the intended
-flow is: `/sync-versions X.Y.Z` (updates all 8 locations) then commit.
+in the pytest suite verifies all 10 version files agree -- so the intended
+flow is: `/sync-versions X.Y.Z` (updates all 10 locations) then commit.
 
 ### Release checklist
 
@@ -124,14 +124,23 @@ flow is: `/sync-versions X.Y.Z` (updates all 8 locations) then commit.
 | Run MLX on NVIDIA GPU | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Write custom CUDA kernels | mlx-cuda | `/mlx-skills:mlx-cuda` |
 | Port Metal kernels to CUDA | mlx-cuda | `/mlx-skills:mlx-cuda` |
+| Write Swift MLX code (arrays, nn, training) | mlx-swift | `/mlx-skills:mlx-swift` |
+| Port PyTorch/Python MLX to Swift | mlx-swift | `/mlx-skills:mlx-swift` |
+| Custom Metal kernels in Swift | mlx-swift | `/mlx-skills:mlx-swift` |
+| Run an LLM/VLM in a Swift/iOS/macOS app | mlx-swift-lm | `/mlx-skills:mlx-swift-lm` |
+| Stream generation or tool-call in Swift | mlx-swift-lm | `/mlx-skills:mlx-swift-lm` |
+| LoRA fine-tune or embed in Swift | mlx-swift-lm | `/mlx-skills:mlx-swift-lm` |
 | Update skills from upstream | update-skills | `/update-skills` |
 | Verify content accuracy | review-content | `/review-content` |
-| Bump version everywhere | sync-versions | `/sync-versions 0.5.10` |
+| Bump version everywhere | sync-versions | `/sync-versions 0.5.11` |
 
 ## Skills and When They Load
 
-There are 4 skills. Each has a `SKILL.md` (always loaded when triggered)
-and `references/` files (loaded on demand).
+There are 6 skills. Each has a `SKILL.md` (always loaded when triggered)
+and `references/` files (loaded on demand). Four are Python (`mlx`,
+`mlx-models`, `fast-mlx`, `mlx-cuda`); two are Swift (`mlx-swift`,
+`mlx-swift-lm`), vendored from the skills that ship inside the upstream
+Swift repos.
 
 ### mlx (core framework)
 
@@ -201,6 +210,49 @@ Metal kernels to CUDA.
 
 **What it covers:** backend detection, custom CUDA kernels, precompiled kernels,
 Metal-to-CUDA kernel migration, CUDA-specific differences.
+
+### mlx-swift (core Swift framework)
+
+**Use for:** Writing, debugging, or porting Swift MLX code (arrays, neural
+networks, training) on Apple silicon. The Swift analog of the `mlx` skill.
+
+**Triggers:** `import MLX`, `import MLXNN`, `import MLXOptimizers`, `MLXArray`,
+`@ModuleInfo`, `callAsFunction`, `valueAndGrad`, "MLX Swift", "Swift MLX",
+"mlx-swift".
+
+**Invocation:**
+- Automatic: mention MLX in a Swift context or work with `.swift` MLX code
+- Explicit: `/mlx-skills:mlx-swift` (plugin) or `/mlx-swift` (personal skill)
+- From other skills: "For core Swift MLX, load the mlx-swift skill"
+
+**What it covers:** MLXArray operations, lazy evaluation, MLXNN layers/modules,
+optimizers, automatic differentiation, JIT compilation, custom Metal kernels,
+wired-memory coordination, Swift concurrency.
+
+**Vendored:** body copied from upstream `ml-explore/mlx-swift` `skills/mlx-swift/`;
+we own only frontmatter + reference `last updated:` headers. Sync via re-vendor.
+
+### mlx-swift-lm (Swift language + vision-language models)
+
+**Use for:** Running, streaming, fine-tuning, or embedding with LLMs/VLMs inside
+a Swift/iOS/macOS app. The Swift analog of the `mlx-models` skill.
+
+**Triggers:** `import MLXLLM`, `import MLXVLM`, `import MLXLMCommon`,
+`import MLXEmbedders`, `ChatSession`, `ModelContainer`, `LLMModelFactory`,
+`GenerateParameters`, "wired memory", "local LLM swift", "VLM swift",
+"LoRA training swift".
+
+**Invocation:**
+- Automatic: scan for `MLXLLM`/`MLXVLM`/`MLXLMCommon` imports
+- Explicit: `/mlx-skills:mlx-swift-lm` (plugin) or `/mlx-swift-lm` (personal skill)
+- From other skills: "load the mlx-swift-lm skill for Swift generation patterns"
+
+**What it covers:** model loading, ChatSession, streaming generation, KV cache,
+tool calling, wired-memory coordination, LoRA/DoRA fine-tuning, embeddings,
+porting models from Python MLX-LM.
+
+**Vendored:** body copied from upstream `ml-explore/mlx-swift-lm`
+`skills/mlx-swift-lm/`; sync via re-vendor.
 
 ## Usage Scenarios
 
@@ -277,8 +329,8 @@ Metal-to-CUDA kernel migration, CUDA-specific differences.
 4. Reports mismatches -- does not auto-fix
 
 ### "Bump project version" (maintainer)
-1. `/sync-versions 0.5.10` loads the version coordinator
-2. Updates version in all 8 locations (pyproject.toml, 4 SKILL.md,
+1. `/sync-versions 0.5.11` loads the version coordinator
+2. Updates version in all 10 locations (pyproject.toml, 6 SKILL.md,
    .claude-plugin/plugin.json, .claude-plugin/marketplace.json,
    plugins/mlx-skills/.claude-plugin/plugin.json)
 3. Updates `last_verified` dates, adds CHANGELOG section header
@@ -391,9 +443,11 @@ this file. Do not invoke `check_updates.py` as a substitute for `/update-skills`
 3. `skills/mlx-models/SKILL.md` -- `metadata.version`
 4. `skills/fast-mlx/SKILL.md` -- `metadata.version`
 5. `skills/mlx-cuda/SKILL.md` -- `metadata.version`
-6. `.claude-plugin/plugin.json` -- `version` field
-7. `.claude-plugin/marketplace.json` -- `plugins[0].version`
-8. `plugins/mlx-skills/.claude-plugin/plugin.json` -- `version` field
+6. `skills/mlx-swift/SKILL.md` -- `metadata.version`
+7. `skills/mlx-swift-lm/SKILL.md` -- `metadata.version`
+8. `.claude-plugin/plugin.json` -- `version` field
+9. `.claude-plugin/marketplace.json` -- `plugins[0].version`
+10. `plugins/mlx-skills/.claude-plugin/plugin.json` -- `version` field
 
 `uv run pytest tests/` will fail if any version is out of sync.
 Always run tests after version bumps.
@@ -423,6 +477,13 @@ Skill validation is handled by the skill-maintainer plugin (`/skill-maintainer:q
 - `mlx-models` skill: mlx-lm and mlx-vlm (generation, caching, fine-tuning, serving, VLMs)
 - `fast-mlx` skill: performance optimization (profiling, compilation, memory)
 - `mlx-cuda` skill: CUDA backend only (keep separate from Metal content)
+- `mlx-swift` skill: core Swift MLX (arrays, MLXNN, optimizers, kernels).
+  VENDORED from upstream `ml-explore/mlx-swift` `skills/mlx-swift/` -- do NOT
+  hand-edit the reference bodies; re-vendor and re-apply our frontmatter +
+  `last updated:` headers. Same for `mlx-swift-lm`.
+- `mlx-swift-lm` skill: Swift LLM/VLM inference (ChatSession, generation, KV
+  cache, tool calling, LoRA, embeddings). VENDORED from upstream
+  `ml-explore/mlx-swift-lm` `skills/mlx-swift-lm/`.
 - Avoid duplicating content across skills; use cross-references instead
 - Code examples should be minimal and correct
 - Keep SKILL.md concise; put details in reference files

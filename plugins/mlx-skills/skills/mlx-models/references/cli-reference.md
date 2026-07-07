@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # mlx-lm CLI Reference
 
@@ -16,8 +16,10 @@ mlx_lm.generate --model mlx-community/Llama-3.2-3B-Instruct-4bit \
 ```
 
 Key flags: `--model`, `--prompt`, `--max-tokens`, `--temp`, `--top-p`,
-`--min-p`, `--repetition-penalty`, `--kv-bits`, `--max-kv-size`,
-`--prefill-step-size`, `--adapter-path`, `--draft-model`, `--num-draft-tokens`.
+`--min-p`, `--top-k`, `--kv-bits`, `--max-kv-size`, `--quantized-kv-start`,
+`--adapter-path`, `--draft-model`, `--num-draft-tokens`. (No
+`--repetition-penalty` or `--prefill-step-size` flag -- those aren't part of
+this CLI's argparser.)
 
 ## chat
 
@@ -27,7 +29,11 @@ Interactive chat session with a model.
 mlx_lm.chat --model mlx-community/Llama-3.2-3B-Instruct-4bit
 ```
 
-Same generation flags as `generate`, plus `--system-prompt`.
+`chat` has its own reduced argparser, not the full `generate` flag set. Key
+flags: `--model`, `--temp`, `--top-p`, `--xtc-probability`,
+`--xtc-threshold`, `--seed`, `--max-kv-size`, `--max-tokens`,
+`--system-prompt`, `--adapter-path`, `--pipeline`. Notably missing `--top-k`,
+`--min-p`, and `--kv-bits`, which `generate` has.
 
 ## lora
 
@@ -38,8 +44,9 @@ mlx_lm.lora --model MODEL --data DATA_DIR --train --iters 1000
 ```
 
 Key flags: `--model`, `--data`, `--train`, `--test`, `--iters`, `--batch-size`,
-`--lora-layers`, `--adapter-path`, `--val-batches` (0 to skip validation),
-`--config` (path to training config JSON).
+`--num-layers` (layers to fine-tune, -1 for all), `--fine-tune-type`
+(lora/dora/full), `--adapter-path`, `--val-batches` (0 to skip validation),
+`--config` (path to a YAML training config file).
 
 ## convert
 
@@ -49,7 +56,11 @@ Convert HuggingFace models to MLX format.
 mlx_lm.convert --hf-path MODEL --mlx-path OUTPUT --quantize --q-bits 4
 ```
 
-Key flags: `--hf-path`, `--mlx-path`, `--quantize`, `--q-bits`, `--q-group-size`.
+Key flags: `--hf-path` / `--model`, `--mlx-path`, `-q` / `--quantize`,
+`--q-bits`, `--q-group-size`, `--q-mode` (choices: affine, mxfp4, nvfp4,
+mxfp8), `--dtype` (float16/bfloat16/float32), `--quant-predicate`
+(mixed-bit recipes), `-d` / `--dequantize`, `--upload-repo`,
+`--trust-remote-code`.
 
 ## fuse
 
@@ -76,14 +87,16 @@ Exposes `/v1/chat/completions` and `/v1/completions`.
 
 ## benchmark
 
-Benchmark model inference speed.
+Benchmark model inference speed using randomly generated prompt tokens (no
+`--prompt` flag -- length is controlled by `--prompt-tokens`).
 
 ```bash
-mlx_lm.benchmark --model MODEL --prompt "Test prompt"
+mlx_lm.benchmark --model MODEL --prompt-tokens 512 --generation-tokens 1024
 ```
 
-Key flags: `--model`, `--prompt`, `--prompt-tokens`, `--generation-tokens`,
-`--batch-size`, `--num-trials`, `--kv-bits`, `--max-kv-size`.
+Key flags: `--model`, `--prompt-tokens`, `--generation-tokens`,
+`--batch-size`, `--num-trials`, `--pipeline`, `--quantize-activations`,
+`--prefill-step-size`, `--delay`.
 
 Reports tokens/second for prefill and generation.
 
@@ -101,44 +114,62 @@ Key flags: `--model`, `--prompt` (`-` for stdin), `--prompt-cache-file`,
 
 ## evaluate
 
-Evaluate model on datasets.
+Evaluate a model on lm-evaluation-harness tasks.
 
 ```bash
-mlx_lm.evaluate --model MODEL --data DATA_DIR
+mlx_lm.evaluate --model MODEL --tasks hellaswag arc_easy
 ```
+
+Key flags: `--model`, `--tasks` (required, one or more lm-evaluation-harness
+task names), `--batch-size`, `--num-shots`, `--limit`,
+`--fewshot-as-multiturn`, `--apply-chat-template`.
 
 ## perplexity
 
-Compute perplexity on text.
+Compute perplexity on a Hugging Face dataset (mlx-lm dataset format).
 
 ```bash
-mlx_lm.perplexity --model MODEL --text "Sample text..."
+mlx_lm.perplexity --model MODEL --data-path allenai/tulu-3-sft-mixture
 ```
+
+Key flags: `--model`, `--data-path`, `--num-samples`, `--sequence-length`,
+`--batch-size`.
 
 ## manage
 
 Manage downloaded models.
 
 ```bash
-mlx_lm.manage --scan     # List downloaded models
-mlx_lm.manage --delete MODEL  # Delete a model
+mlx_lm.manage --scan                    # List downloaded models
+mlx_lm.manage --delete --pattern MODEL  # Delete models matching pattern
 ```
 
-## upload / share
+## upload
 
-Upload or share models on HuggingFace Hub.
+Upload a converted model to HuggingFace Hub.
 
 ```bash
-mlx_lm.upload --model MODEL --repo-id USER/REPO
-mlx_lm.share --model MODEL --repo-id USER/REPO
+mlx_lm.upload --path MODEL_DIR --upload-repo USER/REPO
 ```
+
+## share
+
+Distribute a model's files to other nodes in an MLX distributed cluster --
+this is not a HuggingFace Hub operation.
+
+```bash
+mlx_lm.share --model MODEL --hostfile hosts.json
+```
+
+Key flags: `--path` / `--model` (one required), `--hostfile`, `--dst`,
+`--tmpdir`.
 
 ## Quantization Commands
 
 ### awq (Activation-Aware Weight Quantization)
 
 ```bash
-mlx_lm.awq --model MODEL --mlx-path OUTPUT --q-bits 4
+mlx_lm.awq --model MODEL --mlx-path OUTPUT --bits 4
 ```
 
 Uses activation statistics from calibration data for optimal scale computation.
@@ -146,7 +177,7 @@ Uses activation statistics from calibration data for optimal scale computation.
 ### gptq
 
 ```bash
-mlx_lm.gptq --model MODEL --mlx-path OUTPUT --q-bits 4
+mlx_lm.gptq --model MODEL --mlx-path OUTPUT --bits 4
 ```
 
 Post-training quantization using calibration data and Hessian approximation.
@@ -169,8 +200,11 @@ Per-token dynamic quantization for variable precision.
 
 # mlx-vlm CLI Reference
 
-All commands are invoked as `mlx_vlm.<command>` or `python -m mlx_vlm.<command>`.
-For server details, see [references/serving.md](references/serving.md).
+All commands are invoked as `mlx_vlm.<command>` or `python -m mlx_vlm <command>`
+(space-separated subcommand; the dotted `python -m mlx_vlm.<command>` form
+still works but is deprecated in favor of these two). `lora` is an exception
+-- see below. For server details, see
+[references/serving.md](references/serving.md).
 
 ## generate
 
@@ -183,9 +217,9 @@ mlx_vlm.generate --model mlx-community/gemma-4-4b-it-4bit \
 ```
 
 Key flags: `--model`, `--image` (repeatable), `--audio` (repeatable),
-`--prompt`, `--system`, `--max-tokens` (default: 100), `--temperature`
-(default: 0.7), `--chat` (multi-turn mode), `--resize-shape`,
-`--prefill-step-size` (default: 512), `--kv-bits`, `--kv-quant-scheme`,
+`--prompt`, `--system`, `--max-tokens` (default: 2048), `--temperature`
+(default: 0.0), `--chat` (multi-turn mode), `--resize-shape`,
+`--prefill-step-size` (default: 2048), `--kv-bits`, `--kv-quant-scheme`,
 `--enable-thinking`, `--thinking-budget`, `--adapter-path`.
 
 ## chat
@@ -196,9 +230,13 @@ Interactive multi-turn chat with vision-language models.
 mlx_vlm.chat --model mlx-community/idefics2-8b-chatty-4bit
 ```
 
-Same generation flags as `generate`, plus `--eos-tokens`,
-`--skip-special-tokens`, `--kv-group-size` (default: 64),
-`--quantized-kv-start` (default: 128).
+`chat` has its own reduced argparser (not the full `generate` flag set --
+no `--image`/`--audio`/`--prompt`/`--system`, since those are supplied
+interactively). Key flags: `--model`, `--temperature`, `--max-tokens`,
+`--resize-shape`, `--prefill-step-size`, `--max-kv-size`, `--kv-bits`,
+`--kv-group-size` (default: 64), `--kv-quant-scheme`, `--quantized-kv-start`
+(default: 5000), `--eos-tokens`, `--skip-special-tokens`,
+`--enable-thinking`, `--thinking-budget`.
 
 ## convert
 
@@ -216,10 +254,13 @@ affine, mxfp4, nvfp4, mxfp8), `--dtype` (float32/float16/bfloat16),
 
 ## lora
 
-Fine-tune vision-language models with LoRA or full weight tuning.
+Fine-tune vision-language models with LoRA or full weight tuning. Unlike the
+other `mlx_vlm` commands, `lora` has no console-script entry point and is not
+wired into the `mlx_vlm` subcommand dispatcher -- it can only be invoked as
+a module.
 
 ```bash
-mlx_vlm.lora --model-path MODEL --dataset DATASET --iters 1000
+python -m mlx_vlm.lora --model-path MODEL --dataset DATASET --iters 1000
 ```
 
 Key flags: `--model-path`, `--dataset`, `--learning-rate` (default: 2e-5),

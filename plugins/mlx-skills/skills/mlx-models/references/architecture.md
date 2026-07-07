@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # mlx-lm Architecture
 
@@ -128,15 +128,12 @@ file. The convention is `model_type = "llama"` maps to `models/llama.py`.
 ## Fine-Tuning Flow
 
 ```python
-from mlx_lm import lora
+from mlx_lm.tuner.utils import linear_to_lora_layers
 
-# Apply LoRA adapters
-lora.apply(model, lora_config)  # Wraps target layers with LoRALinear
-
-# Train
+# Freeze the whole model, then convert target layers to LoRA/DoRA --
+# this unfreezes only the converted layers
 model.freeze()
-# Only LoRA parameters are trainable
-model.apply_to_modules(lambda k, m: m.unfreeze() if "lora" in k else None)
+linear_to_lora_layers(model, num_layers, lora_config, use_dora=False)
 
 # Standard training loop with gradient checkpointing
 for batch in dataset:
@@ -239,11 +236,11 @@ mlx-lm provides 17 CLI subcommands via `mlx_lm.<command>` or `python -m mlx_lm <
 | `fuse` | Fuse LoRA/DoRA adapters into base model weights |
 | `benchmark` | Benchmark model inference speed |
 | `cache_prompt` | Pre-compute and save prompt KV cache |
-| `evaluate` | Evaluate model on datasets |
-| `perplexity` | Compute perplexity on text |
+| `evaluate` | Evaluate model on lm-evaluation-harness tasks |
+| `perplexity` | Compute perplexity on a Hugging Face dataset |
 | `manage` | Manage downloaded models (list, delete) |
 | `upload` | Upload model to HuggingFace Hub |
-| `share` | Share model via HuggingFace Hub |
+| `share` | Distribute model to other nodes in an MLX distributed cluster |
 | `awq` | Activation-aware weight quantization |
 | `dwq` | Data-aware weight quantization |
 | `dynamic_quant` | Dynamic per-token quantization |

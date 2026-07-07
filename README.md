@@ -1,4 +1,4 @@
-<!-- last updated: 2026-04-18 -->
+<!-- last updated: 2026-07-07 -->
 
 # MLX Skills
 
@@ -21,7 +21,7 @@ Use the slash commands -- don't drive the scripts by hand.
 |------|---------|--------------|
 | Routine upstream sync | `/update-skills` | Full 6-step workflow: runs `check_updates.py --diff`, analyzes diffs, routes changes into `references/*.md`, validates, runs tests. This is the one you want 95% of the time. |
 | Before a release | `/review-content` | Read-only audit of reference files vs. upstream source (CLI flags, signatures, API tables). Reports mismatches; does not auto-fix. |
-| Bump version | `/sync-versions 0.5.10` | Atomically bumps all 8 version files, updates `last_verified`, adds CHANGELOG header, runs tests. |
+| Bump version | `/sync-versions 0.5.11` | Atomically bumps all 10 version files, updates `last_verified`, adds CHANGELOG header, runs tests. |
 | Quality check | `/skill-maintainer:quality` | Spec compliance, token budgets, body size, freshness, description quality. Safe to run anytime. Already wired into `/update-skills` and `/sync-versions`. |
 | One-time setup (optional) | `/skill-maintainer:init-maintenance` | Adds `.skill-maintainer/` config. Enables `/skill-maintainer:maintain` (broader hygiene pass: Claude Code doc drift, tracked-repo pulls, best-practices review). |
 
@@ -71,8 +71,9 @@ claude plugin add /path/to/mlx-skills
 
 ### manual
 
-Copy `skills/mlx`, `skills/mlx-models`, `skills/fast-mlx`, and `skills/mlx-cuda`
-into your assistant's skills directory (e.g., `~/.claude/skills/`).
+Copy `skills/mlx`, `skills/mlx-models`, `skills/fast-mlx`, `skills/mlx-cuda`,
+`skills/mlx-swift`, and `skills/mlx-swift-lm` into your assistant's skills
+directory (the Claude Code `skills/` folder under your home `.claude/`).
 
 ## skills
 
@@ -82,6 +83,8 @@ into your assistant's skills directory (e.g., `~/.claude/skills/`).
 | mlx-models | `import mlx_lm`, `import mlx_vlm`, `KVCache`, "run llama", "local LLM", "VLM" | Models: loading, generation, KV cache, quantization, LoRA, serving, vision-language |
 | fast-mlx | "optimize mlx", "speed up", "profiling", "reduce memory" | Performance: graph eval, compile, memory management, LLM/diffusion optimization |
 | mlx-cuda | `mx.cuda`, `cuda_kernel`, "NVIDIA GPU", "run mlx on cuda" | CUDA backend: detection, custom CUDA kernels, Metal-to-CUDA porting |
+| mlx-swift | `import MLX`, `MLXArray`, `@ModuleInfo`, "MLX Swift", "Swift MLX" | Core Swift MLX: arrays, MLXNN layers, optimizers, autodiff, custom kernels, wired memory (vendored from upstream mlx-swift) |
+| mlx-swift-lm | `import MLXLLM`, `ChatSession`, `ModelContainer`, "local LLM swift", "VLM swift" | Run LLMs/VLMs in Swift: loading, streaming, KV cache, tool calling, LoRA, embeddings (vendored from upstream mlx-swift-lm) |
 
 ### invocation
 
@@ -95,12 +98,16 @@ Explicit invocation depends on how you installed:
 /mlx-skills:mlx-models
 /mlx-skills:fast-mlx
 /mlx-skills:mlx-cuda
+/mlx-skills:mlx-swift
+/mlx-skills:mlx-swift-lm
 
 # Legacy CLI / manual install (personal skills)
 /mlx
 /mlx-models
 /fast-mlx
 /mlx-cuda
+/mlx-swift
+/mlx-swift-lm
 ```
 
 ### reference files (loaded on demand)
@@ -122,6 +129,15 @@ Explicit invocation depends on how you installed:
 | fast-mlx | llm-optimization.md | KV cache tuning, prefill chunking, speculative decoding |
 | fast-mlx | dit-optimization.md | Denoising compilation, CFG batching, vision attention |
 | fast-mlx | compute-optimization.md | Matrix ops, element-wise fusion, vmap, data pipelines |
+| mlx-swift | arrays / operations / transforms / neural-networks / optimizers | Swift MLXArray, ops, autodiff, MLXNN layers, optimizers |
+| mlx-swift | custom-layers / custom-kernels / wired-memory / concurrency / deprecated | Custom modules, Metal kernels, wired-memory tickets, Sendable rules, migration |
+| mlx-swift-lm | model-container / generation / kv-cache / wired-memory | Loading, streaming generation APIs, cache types, wired-memory policies |
+| mlx-swift-lm | tool-calling / tokenizer-chat / supported-models / lora-adapters / training / embeddings / model-porting / concurrency | Tool loops, chat templates, model registries, LoRA/DoRA, fine-tuning, embeddings, porting, thread safety |
+
+The `mlx-swift` and `mlx-swift-lm` skills are vendored from the skills that
+ship inside the upstream `ml-explore/mlx-swift` and `ml-explore/mlx-swift-lm`
+repos. Their reference bodies are upstream's; we own only the frontmatter and
+`last updated:` headers. See the full set under each skill's `references/`.
 
 ## validation
 
@@ -142,7 +158,7 @@ The full path from "upstream MLX changed" to "shipped a new version":
 1. `/update-skills` -- sync reference files with upstream (runs scanner,
    routes diffs, edits refs, validates).
 2. `/review-content` -- sanity check reference accuracy before cutting.
-3. `/sync-versions X.Y.Z` -- bump all 8 version files, add CHANGELOG header.
+3. `/sync-versions X.Y.Z` -- bump all 10 version files, add CHANGELOG header.
 4. Fill in CHANGELOG.md entries for the new version.
 5. `PYTEST_STRICT=1 uv run pytest tests/` -- final gate (version consistency
    + fails on stale references >45 days).
@@ -158,7 +174,8 @@ plugins/
   mlx-skills/
     .claude-plugin/
       plugin.json           Plugin manifest for marketplace
-    skills -> ../../skills  Symlink to top-level skills
+    skills/                 Real-file mirror of top-level skills
+                            (regenerated by scripts/sync_plugin_skills.py)
 skills/                     Skill source (auto-discovered)
   mlx/
     SKILL.md
@@ -171,6 +188,12 @@ skills/                     Skill source (auto-discovered)
     references/
   mlx-cuda/
     SKILL.md
+  mlx-swift/                Vendored from upstream mlx-swift
+    SKILL.md
+    references/
+  mlx-swift-lm/             Vendored from upstream mlx-swift-lm
+    SKILL.md
+    references/
 .claude/
   skills/                   Maintainer workflows (tracked):
     update-skills.md          upstream sync

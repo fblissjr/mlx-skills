@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # General Compute Optimization Guide
 
@@ -35,8 +35,8 @@ Use `mx.addmm` for matmul-then-add (linear layer with bias):
 # SLOW: separate ops
 result = x @ W.T + bias
 
-# FAST: fused
-result = mx.addmm(bias, x, W)
+# FAST: fused (addmm does not transpose its second argument, so pass W.T)
+result = mx.addmm(bias, x, W.T)
 ```
 
 ### Quantized Matrix Operations
@@ -317,14 +317,17 @@ for i, batch in enumerate(batches):
 ### Memory Monitoring
 
 ```python
-mx.metal.reset_peak_memory()
+mx.reset_peak_memory()
 
 # ... your computation ...
 
-print(f"Peak memory: {mx.metal.get_peak_memory() / 1e9:.2f} GB")
-print(f"Active: {mx.metal.get_active_memory() / 1e9:.2f} GB")
-print(f"Cache: {mx.metal.get_cache_memory() / 1e9:.2f} GB")
+print(f"Peak memory: {mx.get_peak_memory() / 1e9:.2f} GB")
+print(f"Active: {mx.get_active_memory() / 1e9:.2f} GB")
+print(f"Cache: {mx.get_cache_memory() / 1e9:.2f} GB")
 ```
+
+Note: the `mx.metal.*` spellings of these functions (e.g. `mx.metal.get_peak_memory`)
+still work but print a deprecation warning; use the top-level `mx.*` names above.
 
 ## Benchmarking Recipes
 
@@ -344,7 +347,7 @@ def benchmark_model(model, input_shape, warmup=5, iterations=50):
         mx.eval(out)
 
     # Benchmark
-    mx.metal.reset_peak_memory()
+    mx.reset_peak_memory()
     tic = time.perf_counter()
     for _ in range(iterations):
         out = model(x)
@@ -352,7 +355,7 @@ def benchmark_model(model, input_shape, warmup=5, iterations=50):
     toc = time.perf_counter()
 
     ms = 1e3 * (toc - tic) / iterations
-    peak_mb = mx.metal.get_peak_memory() / 1e6
+    peak_mb = mx.get_peak_memory() / 1e6
     print(f"{ms:.2f} ms/iter, peak memory: {peak_mb:.1f} MB")
     return ms
 ```

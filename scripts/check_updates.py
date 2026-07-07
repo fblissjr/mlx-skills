@@ -43,6 +43,11 @@ DEFAULT_REPOS = {
     "mlx-lm": "https://github.com/ml-explore/mlx-lm.git",
     "mlx-vlm": "https://github.com/Blaizzy/mlx-vlm.git",
     "mlx-examples": "https://github.com/ml-explore/mlx-examples.git",
+    # Swift repos ship their own Claude Code skills under skills/. We vendor
+    # those into our skills/mlx-swift and skills/mlx-swift-lm and track the
+    # upstream skill files below so /update-skills flags when to re-vendor.
+    "mlx-swift": "https://github.com/ml-explore/mlx-swift.git",
+    "mlx-swift-lm": "https://github.com/ml-explore/mlx-swift-lm.git",
 }
 
 # Files to watch closely for pattern changes
@@ -97,6 +102,37 @@ WATCHED_FILES = {
         "mlx_vlm/video_generate.py",
     ],
     "mlx-examples": [],
+    # Upstream-maintained skill files we vendor. A change here means re-vendor
+    # the corresponding file under our skills/mlx-swift/. (Paths are relative
+    # to the mlx-swift repo root, where the skill lives at skills/mlx-swift/.)
+    "mlx-swift": [
+        "skills/mlx-swift/SKILL.md",
+        "skills/mlx-swift/references/arrays.md",
+        "skills/mlx-swift/references/operations.md",
+        "skills/mlx-swift/references/transforms.md",
+        "skills/mlx-swift/references/neural-networks.md",
+        "skills/mlx-swift/references/optimizers.md",
+        "skills/mlx-swift/references/custom-layers.md",
+        "skills/mlx-swift/references/custom-kernels.md",
+        "skills/mlx-swift/references/wired-memory.md",
+        "skills/mlx-swift/references/concurrency.md",
+        "skills/mlx-swift/references/deprecated.md",
+    ],
+    "mlx-swift-lm": [
+        "skills/mlx-swift-lm/SKILL.md",
+        "skills/mlx-swift-lm/references/model-container.md",
+        "skills/mlx-swift-lm/references/generation.md",
+        "skills/mlx-swift-lm/references/wired-memory.md",
+        "skills/mlx-swift-lm/references/kv-cache.md",
+        "skills/mlx-swift-lm/references/concurrency.md",
+        "skills/mlx-swift-lm/references/tool-calling.md",
+        "skills/mlx-swift-lm/references/tokenizer-chat.md",
+        "skills/mlx-swift-lm/references/supported-models.md",
+        "skills/mlx-swift-lm/references/lora-adapters.md",
+        "skills/mlx-swift-lm/references/training.md",
+        "skills/mlx-swift-lm/references/embeddings.md",
+        "skills/mlx-swift-lm/references/model-porting.md",
+    ],
 }
 
 DEPRECATION_KEYWORDS = [
@@ -423,6 +459,8 @@ def generate_report(
     lines.append("- `mlx-models/references/serving.md` -- if server.py changed in mlx-lm or mlx-vlm")
     lines.append("- `mlx-models/references/vlm.md` -- if mlx-vlm models, TurboQuant, or vision encoders changed")
     lines.append("- `fast-mlx/references/*.md` -- if optimization techniques changed")
+    lines.append("- `mlx-swift/**` -- re-vendor from upstream mlx-swift `skills/mlx-swift/` if its SKILL.md or references changed")
+    lines.append("- `mlx-swift-lm/**` -- re-vendor from upstream mlx-swift-lm `skills/mlx-swift-lm/` if its SKILL.md or references changed")
     lines.append("")
 
     return "\n".join(lines)

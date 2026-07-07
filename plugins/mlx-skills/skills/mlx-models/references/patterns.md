@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # Idiomatic MLX Patterns
 
@@ -602,7 +602,22 @@ Pattern elements:
 
 ### Batch Generation
 
-mlx-lm supports batched generation via `BatchGenerator`:
+mlx-lm supports batched generation via `BatchGenerator`, or the `batch_generate`
+convenience wrapper:
+
+```python
+from mlx_lm import batch_generate
+
+response = batch_generate(
+    model, tokenizer, prompts,
+    return_token_ids=True,   # populate BatchResponse.token_ids
+    return_logprobs=True,    # populate BatchResponse.logprobs
+)
+```
+
+`return_logprobs` returns the per-token log-probability of each sampled
+token -- useful for RL training (RLOO, PPO) where behavior log-probabilities
+are needed for importance weighting.
 
 - Left-pads shorter prompts in a batch
 - Uses `BatchKVCache` which tracks per-sequence offsets

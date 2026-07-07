@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # Making MLX Go Fast
 
@@ -71,10 +71,12 @@ graph construction with computation like so:
 
 ```python
 def generator():
-    out = mx.async_eval(my_function())
+    out = my_function()
+    mx.async_eval(out)
 
     while True:
-        out_next = mx.async_eval(my_function())
+        out_next = my_function()
+        mx.async_eval(out_next)
         mx.eval(out)
         yield out
         out = out_next
@@ -96,10 +98,12 @@ An easy fix for this is to put the pipeline in a separate stream:
 ```python
 def generator():
     with mx.stream(mx.new_stream(mx.gpu)):
-        out = mx.async_eval(my_function())
+        out = my_function()
+        mx.async_eval(out)
 
         while True:
-            out_next = mx.async_eval(my_function())
+            out_next = my_function()
+            mx.async_eval(out_next)
             mx.eval(out)
             yield out
             out = out_next

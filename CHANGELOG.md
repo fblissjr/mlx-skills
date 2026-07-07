@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.5.11
+
+### Added
+
+- Two Swift skills, vendored from the skills that ship inside the upstream
+  `ml-explore/mlx-swift` and `ml-explore/mlx-swift-lm` repos:
+  - `mlx-swift` -- core Swift MLX: MLXArray operations, MLXNN layers and
+    modules, optimizers, automatic differentiation, JIT compilation, custom
+    Metal kernels, wired-memory coordination, Swift concurrency.
+  - `mlx-swift-lm` -- running LLMs/VLMs in Swift: ModelContainer, ChatSession,
+    streaming generation, KV cache, tool calling, LoRA/DoRA fine-tuning,
+    embeddings, model porting.
+  We own only the frontmatter (description, metadata, cross-references) and the
+  `last updated:` header on each reference file; the bodies are upstream's, so
+  future syncs are a re-vendor rather than a hand-merge.
+- `scripts/check_updates.py` now tracks the two Swift repos and their upstream
+  skill files, with routing rules in `.claude/skills/update-skills.md` that
+  point each watched file at its vendored copy (re-vendor on change).
+
+### Changed
+
+- Refreshed reference files from the upstream-watched API surface (mlx, mlx-lm,
+  mlx-vlm) for changes since 2026-04-19:
+  - `mlx/references/nn-and-training.md` -- corrected the `MultiOptimizer`
+    example (it takes a list of optimizers plus `(path, weight)` filters, not a
+    dict + model).
+  - `mlx-models/references/patterns.md` -- documented `batch_generate`'s
+    `return_token_ids` / `return_logprobs` parameters.
+  - `mlx-models/references/vlm.md` -- added the `TurboQuantPolarProdState`
+    state type.
+  - `mlx-models/references/serving.md` -- documented the mlx-vlm server's
+    Anthropic Messages API endpoints (`/v1/messages`,
+    `/v1/messages/count_tokens`) and stateful `/v1/responses`.
+- Full accuracy audit of the remaining reference files against upstream source,
+  fixing drift that the API scanner does not catch:
+  - Memory-management APIs (`get_active_memory`, `get_peak_memory`,
+    `set_memory_limit`, `set_wired_limit`, `clear_cache`, ...) moved from
+    `mx.metal.*` to top-level `mx.*` (deprecated upstream). Fixed in
+    `mlx/references/fundamentals.md`, `mlx/references/debugging.md`,
+    `fast-mlx/references/fast-mlx-guide.md`,
+    `fast-mlx/references/compute-optimization.md`.
+  - `mlx-models/references/cli-reference.md` -- corrected ~12 nonexistent or
+    renamed CLI flags across `mlx_lm` and `mlx_vlm` (e.g. `mlx_lm.generate` has
+    no `--repetition-penalty`/`--prefill-step-size`; `mlx_lm.lora` uses
+    `--num-layers`/`--fine-tune-type`; `mlx_lm.convert` gained `--q-mode`;
+    `mlx_vlm` defaults and the deprecated `python -m` invocation form).
+  - `mlx-models/references/architecture.md` -- fixed the LoRA fine-tuning API
+    (`linear_to_lora_layers`, not a nonexistent `lora.apply`) and subcommand
+    descriptions.
+  - `mlx/references/fundamentals.md` -- removed a fabricated
+    `mx.local_streams` context manager (real API: `mx.new_thread_local_stream`
+    + `mx.clear_streams`), corrected `mx.printoptions` params and the
+    `nn.quantize` signature.
+  - `mlx/references/anti-patterns.md`, `fast-mlx/references/compute-optimization.md`
+    -- corrected `mx.addmm` operand order (`beta*c + alpha*(a@b)`).
+  - `mlx-cuda/references/cuda_ops.md` -- corrected SM 80 quantized-matmul
+    bit-width restrictions and `gather_qmm` dispatch notes.
+- Version tracking expanded from 8 files to 10 (two new SKILL.md); skill count
+  from 4 to 6. `CLAUDE.md`, `README.md`, `.claude/skills/sync-versions.md`, and
+  `.claude/skills/update-skills.md` updated to match.
+
+### Fixed
+
+- README structure diagram: the plugin mirror is a real-file copy regenerated
+  by `scripts/sync_plugin_skills.py`, not a symlink (stale since 0.5.10).
+
+### Known gaps
+
+- mlx-vlm added a substantial image generation / editing surface
+  (`generate_image`, `edit_image`, a diffusion engine) that is not yet
+  documented. Deferred to a dedicated pass rather than guessing at details.
+
 ## 0.5.10
 
 ### Fixed

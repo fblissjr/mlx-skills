@@ -1,7 +1,7 @@
 ---
 name: sync-versions
 description: >
-  Bump the project version across all 8 locations (pyproject.toml, four
+  Bump the project version across all 10 locations (pyproject.toml, six
   SKILL.md metadata blocks, plugin.json, marketplace.json, plugins wrapper
   plugin.json), update last_verified dates, and add a CHANGELOG.md section
   header. Pass the target version as an argument (e.g., /sync-versions 0.5.7).
@@ -9,7 +9,7 @@ description: >
 
 # Sync Versions Across All Locations
 
-This skill bumps the project version atomically across all 8 locations where
+This skill bumps the project version atomically across all 10 locations where
 version is tracked, updates `last_verified` dates, adds a CHANGELOG section,
 and validates.
 
@@ -27,7 +27,7 @@ Read the current version from `pyproject.toml` to confirm the starting point.
 - If the target equals the current version, report "already at X.Y.Z" and stop
 - Do NOT bump major version without explicit user confirmation
 
-## Step 3 -- Update all 8 locations
+## Step 3 -- Update all 10 locations
 
 Update the version string in each of these files:
 
@@ -58,6 +58,15 @@ Same as 3b.
 
 Same as 3b.
 
+### 3e-1. skills/mlx-swift/SKILL.md
+
+Same as 3b. (Vendored skill -- bump only the `metadata.version`; do not touch
+the upstream body.)
+
+### 3e-2. skills/mlx-swift-lm/SKILL.md
+
+Same as 3b. (Vendored skill -- bump only the `metadata.version`.)
+
 ### 3f. .claude-plugin/plugin.json
 
 ```json
@@ -80,7 +89,7 @@ In `plugins[0].version`:
 
 ### 3i. Mirror the edited SKILL.md files into the plugin copy
 
-Steps 3b-3e edited the canonical `skills/*/SKILL.md` files. The plugin at
+Steps 3b-3e-2 edited the canonical `skills/*/SKILL.md` files. The plugin at
 `plugins/mlx-skills/skills/` is a real-file mirror that now has stale versions.
 Run the sync script to propagate:
 
@@ -94,7 +103,7 @@ release if this step is skipped.
 ## Step 4 -- Update last_verified dates
 
 Set `last_verified` to today's date (YYYY-MM-DD) in the `metadata` block of
-all four SKILL.md files:
+all six SKILL.md files:
 
 ```yaml
 metadata:
@@ -157,6 +166,8 @@ Updated files:
   - skills/mlx-models/SKILL.md (metadata.version, last_verified)
   - skills/fast-mlx/SKILL.md (metadata.version, last_verified)
   - skills/mlx-cuda/SKILL.md (metadata.version, last_verified)
+  - skills/mlx-swift/SKILL.md (metadata.version, last_verified)
+  - skills/mlx-swift-lm/SKILL.md (metadata.version, last_verified)
   - .claude-plugin/plugin.json (version)
   - .claude-plugin/marketplace.json (plugins[0].version)
   - plugins/mlx-skills/.claude-plugin/plugin.json (version)
@@ -168,7 +179,7 @@ Tests: passed
 
 ## Guardrails
 
-- **Atomic** -- update all 8 locations or none (if any edit fails, stop and report)
+- **Atomic** -- update all 10 locations or none (if any edit fails, stop and report)
 - **No major bumps** without explicit user confirmation
 - **No changelog entries** -- just the section header; user fills in details
 - **Validate after** -- always run tests to catch version mismatches

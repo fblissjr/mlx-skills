@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # mlx-vlm Reference
 
@@ -175,8 +175,8 @@ class TurboQuantKVCache(_BaseCache):
 ```
 
 State types (NamedTuples): `TurboQuantMSEState`, `TurboQuantProdState`,
-`TurboQuantPolarState`, `TurboQuantSplitState` -- each stores
-`(keys_norms, keys_packed, values_norms, values_packed)`.
+`TurboQuantPolarState`, `TurboQuantPolarProdState`, `TurboQuantSplitState` --
+each stores `(keys_norms, keys_packed, values_norms, values_packed)`.
 
 ### Performance
 

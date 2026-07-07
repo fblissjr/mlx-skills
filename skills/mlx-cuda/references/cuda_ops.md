@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # CUDA Quantized Operations
 
@@ -39,15 +39,16 @@ mx.gather_qmm(
 
 | Bits | CUDA SM 90 (Hopper) | CUDA SM 80 (Ampere) | CUDA Naive | Metal |
 |------|---------------------|---------------------|------------|-------|
-| 3 | No | Yes | Yes | Yes |
+| 3 | No | No | Yes | Yes |
 | 4 | Yes | Yes | Yes | Yes |
-| 5 | No | Yes | Yes | Yes |
-| 6 | No | Yes | Yes | Yes |
+| 5 | No | No | Yes | Yes |
+| 6 | No | No | Yes | Yes |
 | 8 | Yes | Yes | Yes | Yes |
 
-SM 90 kernels use CUTLASS with cluster shapes for maximum throughput but only
-support even bit widths. The SM 80 and naive fallbacks handle all widths via
-`NumericArrayConverter` specializations.
+Both the SM 90 and SM 80 CUTLASS kernels are gated to `bits in {4, 8}` only;
+3/5/6-bit inputs fall back to the naive kernel on any CUDA device. The naive
+fallback handles all widths via `NumericArrayConverter` specializations
+(including dedicated 3/5/6-bit converters).
 
 ### MoE Routing Example
 
@@ -75,9 +76,12 @@ On CUDA, the kernel is selected by problem shape and compute capability:
 - **QMV path** (M=1, small N/K): Optimized matrix-vector kernels
 - **SM 90 path** (Hopper): CUTLASS with tile shapes up to 128x256, cluster
   shapes for multi-SM execution. Requires affine mode, transpose=True,
-  even bit widths, group_size >= K
-- **SM 80 path** (Ampere): CUTLASS with full bit width support
+  bits in {4, 8}, group_size >= K. This path is only used by plain
+  `mx.quantized_matmul` -- `mx.gather_qmm` never dispatches to SM 90 and
+  falls through to the SM 80 / naive / QMV paths instead.
+- **SM 80 path** (Ampere): CUTLASS, also gated to bits in {4, 8}
 - **Naive fallback**: CuTe-based generic kernel for all configurations
+  (including 3/5/6-bit)
 
 ## segmented_mm -- Segmented Matrix Multiplication
 
@@ -109,7 +113,8 @@ result = mx.segmented_mm(tokens, weights, segments)
 ### Constraints
 
 - Both inputs must be exactly 2D (no batch dimensions)
-- Segments must have `uint32` dtype with last dimension = 2
+- Segments must have an integer dtype with last dimension = 2 (cast
+  internally to `uint32`)
 - Returns real floating-point types only
 
 ## Split-K for Quantized Matmul (Metal)

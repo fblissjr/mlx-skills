@@ -1,4 +1,4 @@
-last updated: 2026-04-09
+last updated: 2026-07-07
 
 # MLX Model Serving
 
@@ -29,6 +29,7 @@ fundamentally different architectures targeting different use cases.
 | Speculative decoding | Yes (draft model) | No |
 | State machine | SequenceStateMachine (Aho-Corasick) | Post-generation parsing |
 | Model hot-swap | ModelProvider (lazy load) | model_cache dict |
+| API compatibility | OpenAI only | OpenAI + Anthropic Messages API (`/v1/messages`) |
 
 ## mlx-lm Server
 
@@ -153,7 +154,9 @@ Both servers support extended thinking for models that have it:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/v1/chat/completions` | POST | Chat completion (OpenAI-compatible) |
-| `/v1/responses` | POST | OpenAI responses.create() format |
+| `/v1/responses` | POST | OpenAI responses.create() format. Stateful -- responses are stored server-side and can be retrieved, cancelled, or listed by ID (`GET`/`DELETE /v1/responses/{response_id}`, `POST .../cancel`) |
+| `/v1/messages` | POST | Anthropic Messages API-compatible chat endpoint |
+| `/v1/messages/count_tokens` | POST | Token counting for an Anthropic-format request |
 | `/v1/models` | GET | List available models |
 | `/health` | GET | Health check |
 | `/unload` | POST | Unload current model and free memory |

@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # DiT / Diffusion Optimization Guide
 

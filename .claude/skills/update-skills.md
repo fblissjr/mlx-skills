@@ -107,6 +107,44 @@ Do NOT use a static mapping. Instead:
    - `mlx_vlm/video_generate.py` -> `mlx-models/references/vlm.md`
    - `mlx_vlm/server.py` -> `mlx-models/references/serving.md`
 
+   **Swift skills (VENDORED -- re-vendor, do not hand-edit content):**
+
+   The `mlx-swift` and `mlx-swift-lm` skills are copied from the skills that
+   ship inside the upstream Swift repos (`ml-explore/mlx-swift` and
+   `ml-explore/mlx-swift-lm`). We own only the frontmatter (description,
+   metadata, cross-references) and the `last updated:` header prepended to each
+   reference file. The bodies are upstream's. When the scanner flags any of the
+   watched upstream skill files below, re-copy that file's body from upstream
+   and re-apply our frontmatter/header rather than editing the content by hand.
+   This keeps future diffs clean.
+
+   - `skills/mlx-swift/SKILL.md` -> re-vendor `skills/mlx-swift/SKILL.md`
+   - `skills/mlx-swift/references/arrays.md`,
+     `skills/mlx-swift/references/operations.md`,
+     `skills/mlx-swift/references/transforms.md`,
+     `skills/mlx-swift/references/neural-networks.md`,
+     `skills/mlx-swift/references/optimizers.md`,
+     `skills/mlx-swift/references/custom-layers.md`,
+     `skills/mlx-swift/references/custom-kernels.md`,
+     `skills/mlx-swift/references/wired-memory.md`,
+     `skills/mlx-swift/references/concurrency.md`,
+     `skills/mlx-swift/references/deprecated.md` -> re-vendor the
+     identically-named file under `skills/mlx-swift/references/`
+   - `skills/mlx-swift-lm/SKILL.md` -> re-vendor `skills/mlx-swift-lm/SKILL.md`
+   - `skills/mlx-swift-lm/references/model-container.md`,
+     `skills/mlx-swift-lm/references/generation.md`,
+     `skills/mlx-swift-lm/references/wired-memory.md`,
+     `skills/mlx-swift-lm/references/kv-cache.md`,
+     `skills/mlx-swift-lm/references/concurrency.md`,
+     `skills/mlx-swift-lm/references/tool-calling.md`,
+     `skills/mlx-swift-lm/references/tokenizer-chat.md`,
+     `skills/mlx-swift-lm/references/supported-models.md`,
+     `skills/mlx-swift-lm/references/lora-adapters.md`,
+     `skills/mlx-swift-lm/references/training.md`,
+     `skills/mlx-swift-lm/references/embeddings.md`,
+     `skills/mlx-swift-lm/references/model-porting.md` -> re-vendor the
+     identically-named file under `skills/mlx-swift-lm/references/`
+
 3. If a significant new area isn't covered by any existing reference file,
    propose creating a new one -- but ask the user for confirmation first.
 

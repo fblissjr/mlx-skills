@@ -1,4 +1,4 @@
-last updated: 2026-04-07
+last updated: 2026-07-07
 
 # nn Module and Training
 
@@ -327,15 +327,22 @@ optimizer.update(model, grads)
 
 ### MultiOptimizer
 
-For per-parameter-group optimization:
+For per-parameter-group optimization, `MultiOptimizer` takes a list of
+optimizers and a list of predicate filters (one fewer filter than optimizers
+-- the last optimizer is the fallback and takes no predicate). Each filter
+receives `(path, weight)` and returns `True` if that optimizer should handle
+the weight:
 
 ```python
 optimizer = optim.MultiOptimizer(
-    {"encoder": optim.Adam(learning_rate=1e-4),
-     "decoder": optim.Adam(learning_rate=1e-3)},
-    model
+    [optim.Muon(learning_rate=1e-3), optim.AdamW(learning_rate=1e-4)],
+    filters=[lambda path, weight: weight.ndim == 2 and "embed" not in path],
 )
+optimizer.update(model, grads)  # routes each weight to the matching optimizer
 ```
+
+Weights matched by the first filter go to `Muon`; everything else (embeddings,
+0D/1D parameters) falls through to the `AdamW` fallback.
 
 ### Gradient Clipping
 
