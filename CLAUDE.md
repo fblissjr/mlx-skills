@@ -1,4 +1,4 @@
-<!-- last updated: 2026-04-18 -->
+<!-- last updated: 2026-07-10 -->
 
 # MLX Skills - Development Guide
 
@@ -25,8 +25,9 @@ signatures, removals, behavior changes), routes each change to the right
 `references/*.md` file, edits in place, then validates with
 `/skill-maintainer:quality` + `uv run pytest tests/`.
 
-The skill is defined at `.claude/skills/update-skills.md` and is the source of
-truth for the routing rules (which upstream path maps to which reference file).
+The skill is defined at `.claude/skills/update-skills/SKILL.md` and is the
+source of truth for the routing rules (which upstream path maps to which
+reference file).
 
 ### Pre-release accuracy audit
 
@@ -46,7 +47,7 @@ anything. Use before `/sync-versions` to catch drift the scanner missed.
 
 Atomically updates all 10 version locations (see "Version files" below),
 refreshes `last_verified` dates, adds a CHANGELOG.md section header, runs
-pytest. Skill definition: `.claude/skills/sync-versions.md`. Required before
+pytest. Skill definition: `.claude/skills/sync-versions/SKILL.md`. Required before
 committing any change under `skills/`, `scripts/`, `.claude-plugin/`, or
 `plugins/` (enforced by `.githooks/pre-commit`).
 
@@ -316,7 +317,7 @@ porting models from Python MLX-LM.
 1. `/update-skills` loads the maintainer workflow skill
 2. Runs `scripts/check_updates.py --diff` to generate a change report
 3. Analyzes diffs, routes changes to the right reference files (per the
-   routing table in `.claude/skills/update-skills.md` Step 3)
+   routing table in `.claude/skills/update-skills/SKILL.md` Step 3)
 4. Updates reference files (not SKILL.md), refreshes `last updated` headers,
    validates with `/skill-maintainer:quality`, runs `uv run pytest tests/`
 5. Does NOT bump versions or touch CHANGELOG. Those are `/sync-versions` --
@@ -358,8 +359,10 @@ porting models from Python MLX-LM.
 - `scripts/check_updates.py` -- upstream change scanner
 - `.claude/skills/` -- project-level maintainer skills (tracked in git,
   loaded by Claude Code when working in this repo; not part of the
-  installable plugin manifest). Contains `update-skills.md`,
-  `review-content.md`, `sync-versions.md`.
+  installable plugin manifest). Each is a subdirectory with a `SKILL.md`
+  entrypoint (required format for auto-discovery -- flat `.md` files directly
+  under `.claude/skills/` are NOT discovered): `update-skills/SKILL.md`,
+  `review-content/SKILL.md`, `sync-versions/SKILL.md`.
 - `.claude/settings.json` -- shared Claude Code config (tracked).
   Configures the PostToolUse hook that auto-syncs the plugin mirror
   after Edit/Write/MultiEdit under `skills/`.
@@ -408,9 +411,19 @@ this file. Do not invoke `check_updates.py` as a substitute for `/update-skills`
 ### Session gotchas
 
 - `/sync-versions` refers to the project-local skill at
-  `.claude/skills/sync-versions.md` (knows this repo's 8-file layout). Do
-  NOT invoke `/skill-maintainer:sync-versions` -- that skill uses a
+  `.claude/skills/sync-versions/SKILL.md` (knows this repo's 10-file layout).
+  Do NOT invoke `/skill-maintainer:sync-versions` -- that skill uses a
   different, generic layout and will skip most of the locations.
+- Flat `.claude/skills/<name>.md` files are silently never discovered as
+  skills -- see the `.claude/skills/` entry under "Key files" above for the
+  required `<name>/SKILL.md` format (same subdirectory convention as
+  top-level `skills/`, see "Skill structure rules" below). All 3 maintainer
+  skills shipped as flat files at one point and were invisible as a result
+  until moved into subdirectories. Guarded by
+  `tests/test_skill_structure.py::TestProjectSkillsFormat` -- pytest only,
+  no PostToolUse hook or pre-commit wiring (lower stakes than the plugin
+  mirror: this directory isn't shipped to plugin consumers), so run
+  `uv run pytest tests/` before committing changes under `.claude/skills/`.
 - Sandbox blocks `uv run ...` (cache writes under `~/.cache/uv`),
   `git commit` with SSH signing via 1Password (socket unreachable), and
   `git config` (writes to `.git/config`). Symptoms: "Operation not

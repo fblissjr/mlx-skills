@@ -8,7 +8,7 @@ Replaces the removed validate.py with proper pytest coverage:
 - SKILL.md word count guard
 - Stale skill path detection
 - Reference file staleness warnings (strict mode via PYTEST_STRICT=1)
-- Routing coverage: every WATCHED_FILES entry has a rule in update-skills.md
+- Routing coverage: every WATCHED_FILES entry has a rule in update-skills/SKILL.md
 - Doc-count invariants: skill count and version-file count claims in docs
   must match the actual constants.
 """
@@ -359,10 +359,112 @@ class TestWordCount:
 # without a routing rule, a skill without docs, or a version location without
 # touching /sync-versions.
 
-UPDATE_SKILLS_PATH = ROOT / ".claude" / "skills" / "update-skills.md"
-SYNC_VERSIONS_PATH = ROOT / ".claude" / "skills" / "sync-versions.md"
+UPDATE_SKILLS_PATH = ROOT / ".claude" / "skills" / "update-skills" / "SKILL.md"
+SYNC_VERSIONS_PATH = ROOT / ".claude" / "skills" / "sync-versions" / "SKILL.md"
 CLAUDE_MD_PATH = ROOT / "CLAUDE.md"
 README_PATH = ROOT / "README.md"
+PROJECT_SKILLS_DIR = ROOT / ".claude" / "skills"
+REQUIRED_PROJECT_SKILL_FRONTMATTER = {"name", "description"}
+# Non-skill entries allowed to sit in .claude/skills/. A leading "." or "_"
+# marks scratch/tool-generated content (matches this file's own _foo naming
+# convention); README.md is the one expected non-skill filename.
+_ALLOWED_NON_SKILL_FILES = {"README.md"}
+PROJECT_SKILL_NAMES = sorted(
+    p.name for p in PROJECT_SKILLS_DIR.iterdir()
+    if p.is_dir() and not p.name.startswith((".", "_"))
+)
+
+
+class TestProjectSkillsFormat:
+    """Project-level skills must use the <name>/SKILL.md directory format.
+
+    A flat `.claude/skills/<name>.md` file is silently never discovered by
+    Claude Code's skill auto-discovery -- it doesn't error, it just never
+    appears as an invocable skill/command. All three maintainer skills
+    shipped this way undetected until fixed. Guard against regressing.
+    """
+
+    def test_no_flat_md_files(self):
+        flat_files = sorted(
+            p.name for p in PROJECT_SKILLS_DIR.iterdir()
+            if p.is_file()
+            and p.suffix.lower() == ".md"
+            and p.name not in _ALLOWED_NON_SKILL_FILES
+        )
+        assert not flat_files, (
+            "Flat .md files directly under .claude/skills/ are never auto-discovered:\n"
+            + "\n".join(f"  {f}" for f in flat_files)
+            + "\nMove each into .claude/skills/<name>/SKILL.md."
+        )
+
+    def test_every_subdirectory_has_skill_md(self):
+        missing = []
+        for p in sorted(PROJECT_SKILLS_DIR.iterdir()):
+            if not p.is_dir() or p.name.startswith((".", "_")):
+                continue
+            # Exact-case, file-only membership check: Path.exists() alone
+            # would accept a directory named SKILL.md, and would silently
+            # case-fold on case-insensitive filesystems (e.g. macOS APFS).
+            entry_names = {child.name for child in p.iterdir() if child.is_file()}
+            if "SKILL.md" not in entry_names:
+                missing.append(p.name)
+        assert not missing, (
+            "Project-level skill directories missing a SKILL.md entrypoint:\n"
+            + "\n".join(f"  {m}" for m in missing)
+        )
+
+    def test_frontmatter_has_required_fields(self):
+        problems = []
+        for name in PROJECT_SKILL_NAMES:
+            skill_md = PROJECT_SKILLS_DIR / name / "SKILL.md"
+            if not skill_md.is_file():
+                continue  # reported by test_every_subdirectory_has_skill_md
+            frontmatter, _ = _parse_frontmatter(skill_md)
+            missing_fields = REQUIRED_PROJECT_SKILL_FRONTMATTER - frontmatter.keys()
+            if missing_fields:
+                problems.append(f"{name}/SKILL.md: missing {sorted(missing_fields)}")
+            elif frontmatter.get("name") != name:
+                problems.append(
+                    f"{name}/SKILL.md: name '{frontmatter.get('name')}' != directory '{name}'"
+                )
+        assert not problems, (
+            "Project-level skill frontmatter problems:\n"
+            + "\n".join(f"  {p}" for p in problems)
+        )
+
+
+class TestProjectSkillListDocumented:
+    """The .claude/skills/ list/count in README.md and CLAUDE.md must match disk."""
+
+    def test_skill_count_matches_docs(self):
+        expected = len(PROJECT_SKILL_NAMES)
+        claim_pattern = re.compile(r"\ball (\d+) maintainer skills\b", re.IGNORECASE)
+        mismatches = []
+        for doc in (CLAUDE_MD_PATH, README_PATH):
+            text = doc.read_text()
+            for match in claim_pattern.finditer(text):
+                claim = int(match.group(1))
+                if claim != expected:
+                    rel = doc.relative_to(ROOT)
+                    mismatches.append(
+                        f"{rel}: claims '{match.group(0)}' but .claude/skills/ has {expected} entries"
+                    )
+        assert not mismatches, (
+            "Documentation numbers out of sync with .claude/skills/:\n"
+            + "\n".join(f"  {m}" for m in mismatches)
+        )
+
+    def test_all_project_skills_mentioned_in_docs(self):
+        missing = []
+        for doc in (CLAUDE_MD_PATH, README_PATH):
+            text = doc.read_text()
+            for name in PROJECT_SKILL_NAMES:
+                if name not in text:
+                    missing.append(f"{doc.relative_to(ROOT)}: missing '{name}'")
+        assert not missing, (
+            "Project-level skills not mentioned in docs:\n" + "\n".join(f"  {m}" for m in missing)
+        )
+
 
 # Routing prose refers to watched paths with `python/mlx/` stripped. Match
 # against both the full and stripped form.
@@ -379,10 +481,10 @@ def _watched_path_candidates(path: str) -> list[str]:
 
 
 class TestRoutingCoverage:
-    """Every watched upstream file needs a routing rule in update-skills.md."""
+    """Every watched upstream file needs a routing rule in update-skills/SKILL.md."""
 
     def test_every_watched_file_has_routing_rule(self):
-        """WATCHED_FILES -> update-skills.md routing coverage.
+        """WATCHED_FILES -> update-skills/SKILL.md routing coverage.
 
         For each file in scripts/check_updates.py WATCHED_FILES, at least one
         backticked form of its path must appear in the routing section.
@@ -398,7 +500,7 @@ class TestRoutingCoverage:
                     missing.append(f"{repo}: {path}")
 
         assert not missing, (
-            "WATCHED_FILES entries with no routing rule in update-skills.md:\n"
+            "WATCHED_FILES entries with no routing rule in update-skills/SKILL.md:\n"
             + "\n".join(f"  {m}" for m in missing)
             + "\nAdd a rule under Step 3 or remove the entry from WATCHED_FILES."
         )
@@ -460,7 +562,7 @@ class TestVersionFilesDocumented:
         )
 
     def test_sync_versions_skill_lists_all_files(self):
-        """Every VERSION_FILES entry (by relative path) must appear in sync-versions.md."""
+        """Every VERSION_FILES entry (by relative path) must appear in sync-versions/SKILL.md."""
         text = SYNC_VERSIONS_PATH.read_text()
         missing = []
         for path in VERSION_FILES:
@@ -469,7 +571,7 @@ class TestVersionFilesDocumented:
                 missing.append(rel)
 
         assert not missing, (
-            "VERSION_FILES entries not mentioned in sync-versions.md:\n"
+            "VERSION_FILES entries not mentioned in sync-versions/SKILL.md:\n"
             + "\n".join(f"  {m}" for m in missing)
             + "\nAdd each missing path to Step 3 of the skill."
         )

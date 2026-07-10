@@ -23,8 +23,9 @@ Output: Markdown report with watched file changes, potential breaking changes,
 notable commits, and suggested skill updates.
 
 Invariant: every path in WATCHED_FILES must have a routing rule in
-.claude/skills/update-skills.md Step 3. The TestRoutingCoverage pytest class
-enforces this -- adding a new watched file without a routing rule fails tests.
+.claude/skills/update-skills/SKILL.md Step 3. The TestRoutingCoverage pytest
+class enforces this -- adding a new watched file without a routing rule fails
+tests.
 """
 
 import argparse

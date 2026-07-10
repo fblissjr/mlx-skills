@@ -1,4 +1,4 @@
-<!-- last updated: 2026-07-07 -->
+<!-- last updated: 2026-07-10 -->
 
 # MLX Skills
 
@@ -30,9 +30,9 @@ standalone only gives you a diff report -- no edits, no validation. Prefer
 the slash command.
 
 The maintainer slash commands (`/update-skills`, `/review-content`,
-`/sync-versions`) live at `.claude/skills/*.md` in this repo and load
-automatically when Claude Code is invoked from the project directory -- no
-separate install step. `.claude/settings.local.json` is per-user and
+`/sync-versions`) live at `.claude/skills/<name>/SKILL.md` in this repo and
+load automatically when Claude Code is invoked from the project directory --
+no separate install step. `.claude/settings.local.json` is per-user and
 gitignored.
 
 Install the skill-maintainer plugin once (for `/skill-maintainer:quality`):
@@ -196,9 +196,9 @@ skills/                     Skill source (auto-discovered)
     references/
 .claude/
   skills/                   Maintainer workflows (tracked):
-    update-skills.md          upstream sync
-    review-content.md         accuracy audit
-    sync-versions.md          version bump
+    update-skills/SKILL.md    upstream sync
+    review-content/SKILL.md   accuracy audit
+    sync-versions/SKILL.md    version bump
   settings.local.json       Per-user permissions (gitignored)
 .githooks/
   pre-commit                Version-bump gate

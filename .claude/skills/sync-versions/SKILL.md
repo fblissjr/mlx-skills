@@ -129,8 +129,8 @@ Do NOT fill in changelog entries -- the user will do that. Just add the header.
 
 ## Step 6 -- Update memory
 
-Update the version number in `/Users/fredbliss/.claude/projects/-Users-fredbliss-claude-mlx-skills/memory/MEMORY.md`
-under the "Versioning" section to reflect the new version.
+Update the version number in the user's global Claude Code memory index for
+this project (`MEMORY.md`, "Versioning" section) to reflect the new version.
 
 ## Step 7 -- Validate
 

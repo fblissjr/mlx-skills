@@ -148,3 +148,6 @@ dmypy.json
 
 # .DS_Store files
 .DS_Store
+
+# skill-maintainer per-repo state
+.skill-maintainer/state/

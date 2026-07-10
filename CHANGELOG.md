@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.12
+
+- (changes go here)
+
 ## 0.5.11
 
 ### Added
