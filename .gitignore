@@ -149,5 +149,9 @@ dmypy.json
 # .DS_Store files
 .DS_Store
 
-# skill-maintainer per-repo state
-.skill-maintainer/state/
+# skill-maintainer per-repo state and config (local tooling, not shared)
+.skill-maintainer/
+
+# model-delegation rule + agents (local experimentation, not shared)
+.claude/agents/
+.claude/rules/
