@@ -362,7 +362,10 @@ porting models from Python MLX-LM.
   installable plugin manifest). Each is a subdirectory with a `SKILL.md`
   entrypoint (required format for auto-discovery -- flat `.md` files directly
   under `.claude/skills/` are NOT discovered): `update-skills/SKILL.md`,
-  `review-content/SKILL.md`, `sync-versions/SKILL.md`.
+  `review-content/SKILL.md`, `sync-versions/SKILL.md`. Frontmatter is
+  intentionally minimal (`name` + `description` only, no `license`/
+  `metadata` block like product skills) -- validated by
+  `TestProjectSkillsFormat::test_frontmatter_has_required_fields`.
 - `.claude/settings.json` -- shared Claude Code config (tracked).
   Configures the PostToolUse hook that auto-syncs the plugin mirror
   after Edit/Write/MultiEdit under `skills/`.
@@ -461,6 +464,11 @@ this file. Do not invoke `check_updates.py` as a substitute for `/update-skills`
 8. `.claude-plugin/plugin.json` -- `version` field
 9. `.claude-plugin/marketplace.json` -- `plugins[0].version`
 10. `plugins/mlx-skills/.claude-plugin/plugin.json` -- `version` field
+
+`uv.lock` also picks up the new version automatically (it pins this
+package's own editable entry) the next time any `uv run ...` command
+executes -- expect it in the diff; it's a machine regeneration, not a
+hand-edit.
 
 `uv run pytest tests/` will fail if any version is out of sync.
 Always run tests after version bumps.

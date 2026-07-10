@@ -2,7 +2,25 @@
 
 ## 0.5.12
 
-- (changes go here)
+### Fixed
+
+- `.claude/skills/{update-skills,review-content,sync-versions}` were flat
+  `.md` files, never auto-discovered by Claude Code's skill system (requires
+  the `<name>/SKILL.md` subdirectory format used by plugin skills). The
+  `/update-skills`, `/review-content`, and `/sync-versions` maintainer
+  commands were silently broken as a result. Moved all three into the
+  correct format and fixed every path reference in CLAUDE.md, README.md, and
+  `scripts/check_updates.py`.
+- Removed a leaked absolute home-directory path from
+  `sync-versions/SKILL.md` Step 6.
+
+### Added
+
+- `TestProjectSkillsFormat` and `TestProjectSkillListDocumented` pytest
+  classes guard `.claude/skills/` against regressing: no flat `.md` files,
+  every subdirectory has a real `SKILL.md` file (not a directory of the same
+  name), required frontmatter present, and docs stay in sync with what's on
+  disk.
 
 ## 0.5.11
 
