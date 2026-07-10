@@ -1,6 +1,6 @@
 {
   "name": "mlx-skills",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "description": "Skills that teach AI coding assistants how to write correct, performant MLX code on Apple silicon.",
   "author": {
     "name": "Fred Bliss"

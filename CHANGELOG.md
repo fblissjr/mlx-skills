@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.13
+
+### Fixed
+
+- `mlx-models/references/serving.md` named the removed `SequenceStateMachine`
+  class in 4 places (architecture comparison table, key components, thinking
+  support, tool calling). Upstream mlx-lm split it into `StopSequenceMatcher`
+  (token-level stop/EOS detection) and `TextStateMachine` (text-level
+  reasoning/tool-call parsing) in "Text-based state machine for
+  tool/reasoning parsing" (mlx-lm#1501). Updated all four references to the
+  current two-class split.
+- `.claude/skills/update-skills/SKILL.md` claimed `mlx-cuda` has no
+  `references/` directory; it's had `cuda_ops.md` since an earlier sync.
+
 ## 0.5.12
 
 ### Fixed

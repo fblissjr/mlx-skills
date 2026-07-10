@@ -151,7 +151,8 @@ Do NOT use a static mapping. Instead:
 **Note on mlx-cuda:** The `mlx-cuda` skill exists but CUDA upstream files are
 not currently tracked in `WATCHED_FILES`. It's lower priority -- Metal is the
 primary backend. If CUDA tracking is added later, route changes to
-`skills/mlx-cuda/SKILL.md` (no references directory exists today).
+`skills/mlx-cuda/references/cuda_ops.md` (or `skills/mlx-cuda/SKILL.md` for
+anything not yet covered by a reference file).
 
 ## Step 4 -- Update reference files
 

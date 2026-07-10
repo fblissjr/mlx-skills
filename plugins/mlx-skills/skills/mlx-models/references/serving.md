@@ -1,4 +1,4 @@
-last updated: 2026-07-07
+last updated: 2026-07-10
 
 # MLX Model Serving
 
@@ -27,7 +27,7 @@ fundamentally different architectures targeting different use cases.
 | Vision cache | None | VisionFeatureCache (LRU, 20 items) |
 | Distributed | Pipeline + tensor parallelism | Single-device only |
 | Speculative decoding | Yes (draft model) | No |
-| State machine | SequenceStateMachine (Aho-Corasick) | Post-generation parsing |
+| State machine | StopSequenceMatcher (Aho-Corasick, token-level) + TextStateMachine (text-level reasoning/tool parsing) | Post-generation parsing |
 | Model hot-swap | ModelProvider (lazy load) | model_cache dict |
 | API compatibility | OpenAI only | OpenAI + Anthropic Messages API (`/v1/messages`) |
 
@@ -50,10 +50,12 @@ Key components:
   `--prompt-concurrency` (default 8).
 - **ModelProvider**: Lazy model loading. Caches the loaded model and reloads
   only when the model path changes. Supports adapter loading and draft models.
-- **SequenceStateMachine**: Aho-Corasick trie for efficient multi-pattern
-  matching during generation. Tracks state transitions between `normal`,
-  `reasoning` (thinking), and `tool` (function calling) states. Matches stop
-  sequences and state-specific control tokens.
+- **StopSequenceMatcher**: Aho-Corasick trie for token-level stop-word/EOS
+  detection during generation.
+- **TextStateMachine**: Text-level state machine tracking transitions between
+  `normal`, `reasoning` (thinking), and `tool` (function calling) states.
+  Strips control sequences (`<think>` tags, tool-call delimiters) from the
+  decoded text stream as it steps through generated tokens.
 
 ### Batching Strategy
 
@@ -146,7 +148,7 @@ Supports multiple input types per request:
 Both servers support extended thinking for models that have it:
 - `enable_thinking`, `thinking_budget`, `thinking_start_token`,
   `thinking_end_token` parameters
-- mlx-lm tracks thinking state in SequenceStateMachine
+- mlx-lm tracks thinking state in TextStateMachine
 - mlx-vlm passes through `template_kwargs` to the chat template
 
 ### Endpoints
@@ -166,8 +168,9 @@ Both servers support extended thinking for models that have it:
 Both servers support function/tool calling, but implement it differently:
 
 **mlx-lm**: Integrated into the generation state machine. Tool call boundaries
-are tracked during token generation via SequenceStateMachine state transitions
-(`normal` -> `tool` -> `normal`). The server auto-detects the correct parser
+are tracked via TextStateMachine state transitions on the decoded text stream
+(`normal` -> `tool` -> `normal`), separate from token-level stop-sequence
+detection (StopSequenceMatcher). The server auto-detects the correct parser
 from the model's tokenizer config. Supports streaming tool calls.
 
 **mlx-vlm**: Post-generation parsing. Tool parser is inferred from the
