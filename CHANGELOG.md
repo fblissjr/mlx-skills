@@ -2,7 +2,21 @@
 
 ## 0.5.14
 
-- (changes go here)
+### Changed
+
+- `fast-mlx`: elevated the caching-allocator / `clear_cache()` memory gotcha
+  from a buried "periodic `clear_cache`" aside to a prominent workflow step, a
+  Remember-list item, and a dedicated `fast-mlx-guide.md` subsection ("The
+  caching allocator, `clear_cache`, and reading memory correctly"). A
+  long-running MLX job most often dies as a mystery SIGKILL / exit 137 mid-run:
+  the caching allocator pins process RSS at the largest iteration's high-water
+  and never returns it to the OS, so near-full unified memory trips macOS
+  jetsam at an iteration boundary. New guidance covers when to clear (between
+  large, infrequent iterations when memory-bound) vs. when not to (tight hot
+  loops with headroom, where buffer reuse wins), that `reset_peak_memory()`
+  resets only the counter and frees nothing, and how to measure real OOM risk
+  (`get_peak_memory()` is a counter; `ps rss` misses Metal buffers and mmap'd
+  weights; watch system memory pressure).
 
 ## 0.5.13
 
