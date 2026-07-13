@@ -18,8 +18,8 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Swift 5.9+ / Xcode 1
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.13
-  last_verified: "2026-07-10"
+  version: 0.5.14
+  last_verified: "2026-07-12"
 ---
 
 # MLX Swift Framework

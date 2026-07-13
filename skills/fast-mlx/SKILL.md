@@ -15,8 +15,8 @@ compatibility: "Requires macOS with Apple silicon (M1+) and Python 3.9+"
 allowed-tools: "Read, Glob, Grep"
 metadata:
   author: Fred Bliss
-  version: 0.5.13
-  last_verified: "2026-07-10"
+  version: 0.5.14
+  last_verified: "2026-07-12"
 ---
 
 # Fast MLX
@@ -57,8 +57,17 @@ model and vision-language model patterns.
    For models with fixed-shape inputs, compile the entire forward pass.
 5. Review compilation strategy; avoid unnecessary recompiles from changing
    constants, shapes, or closure captures.
-6. Reduce peak memory via lazy loading order, releasing temporaries before
-   evaluation, and periodic `mx.clear_cache()`.
+6. Reduce peak memory via lazy loading order and releasing temporaries before
+   evaluation. For any **long-running loop** (training steps, multi-item
+   inference/fitting), call `mx.clear_cache()` **between iterations**: MLX's
+   caching allocator pins the process's resident memory at the largest
+   iteration's high-water for the whole run and never returns it to the OS, so on
+   near-full unified memory a later iteration can trip the OS memory-pressure
+   killer (macOS jetsam / exit 137). Tradeoff: clearing defeats buffer reuse, so
+   do NOT clear inside a tight hot loop with headroom — clear between large,
+   infrequent iterations when memory-bound. `reset_peak_memory()` resets the
+   *counter*, not the pool — it frees nothing. See the guide's "caching
+   allocator" subsection.
 7. Suggest profiling steps if the bottleneck is unclear.
 
 ## Domain-Specific Guides (read before answering -- complete details inside)
@@ -95,4 +104,6 @@ Pick the guide that matches your optimization target:
 3. **`mx.fast` ops before compile** -- fused ops give guaranteed gains
 4. **Compile whole forward passes** -- when shapes are fixed, compile aggressively
 5. **Release temporaries before evaluating** -- `del` intermediates to reduce peak memory
-6. **Read reference files first** -- do not search the web for optimization questions
+6. **`clear_cache()` between iterations of a long loop** -- the caching allocator pins RSS at the high-water otherwise; a mystery SIGKILL/137 mid-run is usually this. But keep the cache in tight hot loops (reuse > re-alloc).
+7. **Measure the right number** -- `get_peak_memory()` is a counter, not resident memory; on macOS `ps rss` misses Metal + mmap'd weights, so watch system pressure for real OOM risk
+8. **Read reference files first** -- do not search the web for optimization questions

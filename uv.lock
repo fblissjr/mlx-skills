@@ -53,7 +53,7 @@ wheels = [
 
 [[package]]
 name = "mlx-skills"
-version = "0.5.13"
+version = "0.5.14"
 source = { editable = "." }
 
 [package.dev-dependencies]

@@ -400,3 +400,50 @@ For the complete API table, load the `mlx` skill and see
 - `set_wired_limit(n)`: Pins memory so the OS cannot page it out. Use for
   large model weights that must stay resident. Set to
   `mx.device_info()["max_recommended_working_set_size"]` for maximum pinning.
+
+#### The caching allocator, `clear_cache`, and reading memory correctly
+
+This is the memory behavior most likely to bite a long-running job, and it is
+easy to misdiagnose. MLX uses a **caching allocator**: when an array is freed,
+its buffer is kept in a pool for fast reuse, **not returned to the OS**. So a
+process's resident footprint rises to the *high-water mark of the largest
+iteration* and **stays there for the process's whole life** — even while a later,
+much smaller iteration is running.
+
+**When this bites** — a loop (training steps, multi-item batch/inference) where
+one iteration allocates a large working set and later ones are smaller. The
+process holds the large footprint the entire run. On **unified memory near the
+ceiling** (Apple Silicon), that pinned footprint leaves little headroom, and a
+transient spike at an iteration boundary trips the OS memory-pressure killer
+(macOS **jetsam → SIGKILL / exit 137**) — often on a *cheap* iteration, which
+makes it look like a mystery rather than a memory issue.
+
+**The fix** — call `mx.clear_cache()` between iterations to release the pool back
+to the OS. `set_cache_limit(n)` is the softer, always-on alternative (caps the
+pool without fully draining it).
+
+**When NOT to (the tradeoff)** — clearing defeats the cache's purpose: the next
+allocation is "cold" (re-requested from the OS), a small latency hit. In a
+**tight hot loop that reuses same-shaped buffers**, the cache is a feature — do
+not clear every iteration or you pay re-allocation each time. Rule of thumb:
+clear between **large, infrequent** iterations when you are **memory-pressure-
+bound**; keep the cache when iterations are fast and you have headroom. Per
+training step / per corpus item is usually the right granularity; per inner op
+is not.
+
+**The trap that wastes time**: `mx.reset_peak_memory()` resets the peak
+*counter* — it does **not** free the pool. Calling it expecting memory to drop
+is a common mistake; only `clear_cache()` (or a lower `set_cache_limit`) frees.
+
+**Measure the right number** (mixing these up sends you optimizing the wrong
+thing):
+- `get_peak_memory()` — a high-water *counter* since the last reset, **not**
+  current resident memory.
+- `get_active_memory()` — memory currently live; `get_cache_memory()` — held in
+  the pool but freeable. `active + cache` ≈ what MLX is holding right now; the
+  gap between `peak` and `active` is what a `clear_cache` can reclaim.
+- On macOS, **do not trust `ps rss`** as the footprint: it may not fully account
+  for Metal buffer allocations, and `mx.load`'d weights are mmap-backed (counted
+  as reclaimable file cache, not anonymous pressure). For real OOM / jetsam risk,
+  watch **system** memory pressure (`memory_pressure`, `vm_stat`), not
+  `get_peak_memory` or `ps rss` alone.
